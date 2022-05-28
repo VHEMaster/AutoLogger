@@ -57,10 +57,18 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define LED_KLINE_Pin GPIO_PIN_13
+#define LED_KLINE_GPIO_Port GPIOC
 #define USART1_LO_Pin GPIO_PIN_8
 #define USART1_LO_GPIO_Port GPIOA
 #define SDIO_DET_Pin GPIO_PIN_15
 #define SDIO_DET_GPIO_Port GPIOA
+#define LED_SDIO_Pin GPIO_PIN_4
+#define LED_SDIO_GPIO_Port GPIOB
+#define LED_USB_Pin GPIO_PIN_5
+#define LED_USB_GPIO_Port GPIOB
+#define LED_CAN_Pin GPIO_PIN_6
+#define LED_CAN_GPIO_Port GPIOB
 #define CAN1_LBK_Pin GPIO_PIN_7
 #define CAN1_LBK_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
