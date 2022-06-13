@@ -144,7 +144,8 @@ void StartUsbTask(void *argument)
         }
 
         recreate = 0;
-        fres = f_open(file, "last.txt", FA_OPEN_EXISTING | FA_READ);
+        sprintf(filename, "%s/last.txt", path);
+        fres = f_open(file, filename, FA_OPEN_EXISTING | FA_READ);
         if(fres == FR_OK) {
           if(f_size(file) >= sizeof(string)) {
             fres = f_close(file);
@@ -166,7 +167,8 @@ void StartUsbTask(void *argument)
         }
 
         if(recreate) {
-          fres = f_open(file, "last.txt", FA_CREATE_ALWAYS | FA_WRITE);
+          sprintf(filename, "%s/last.txt", path);
+          fres = f_open(file, filename, FA_CREATE_ALWAYS | FA_WRITE);
           if(fres == FR_OK) {
             sprintf(filename, "%05hu", filenumber);
             fres = f_write(file, filename, strlen(filename), &read);
@@ -181,7 +183,7 @@ void StartUsbTask(void *argument)
           }
         }
 
-        sprintf(filename, "%slog_%05hu.eculog", path, filenumber);
+        sprintf(filename, "%s/log_%05hu.eculog", path, filenumber);
         fres = f_open(file, filename, FA_CREATE_ALWAYS | FA_WRITE);
         if(fres != FR_OK) { osDelay(100); continue; }
         fres = f_write(file, gFileHeader, strlen(gFileHeader), &wrote);
