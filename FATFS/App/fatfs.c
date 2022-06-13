@@ -27,6 +27,9 @@ char USBHPath[4];   /* USBH logical drive path */
 FATFS USBHFatFS;    /* File system object for USBH logical drive */
 FIL USBHFile;       /* File object for USBH */
 
+extern RTC_TimeTypeDef sTime;
+extern RTC_DateTypeDef sDate;
+
 /* USER CODE BEGIN Variables */
 
 /* USER CODE END Variables */
@@ -51,7 +54,13 @@ void MX_FATFS_Init(void)
 DWORD get_fattime(void)
 {
   /* USER CODE BEGIN get_fattime */
-  return 0;
+  uint16_t sec = sTime.Seconds;
+  uint16_t min = sTime.Minutes;
+  uint16_t hour = sTime.Hours;
+  uint16_t date = sDate.Date;
+  uint16_t month = sDate.Month;
+  uint16_t year = sDate.Year;
+  return ((sec>>1)&0x1F)|((min&0x3F)<<5)|((hour&0x1F)<<11)|((date&0x1F)<<16)|((month&0xF)<<21)|(((year+20)&0x7F)<<25);
   /* USER CODE END get_fattime */
 }
 
