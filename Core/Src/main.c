@@ -1,6 +1,7 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "fatfs.h"
+#include "led.h"
 
  CAN_HandleTypeDef hcan1;
 
@@ -68,6 +69,12 @@ int main(void)
   osKernelInitialize();
 
   tasksInit();
+
+  led_init();
+  led_register(LedUsb, LED_USB_GPIO_Port, LED_USB_Pin, LedOff);
+  led_register(LedSdio, LED_SDIO_GPIO_Port, LED_SDIO_Pin, LedOff);
+  led_register(LedCan, LED_CAN_GPIO_Port, LED_CAN_Pin, LedOff);
+  led_register(LedKline, LED_KLINE_GPIO_Port, LED_KLINE_Pin, LedOff);
 
   HAL_TIM_Base_Start_IT(&htim7);
 
