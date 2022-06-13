@@ -54,6 +54,11 @@ ApplicationTypeDef Appli_state = APPLICATION_IDLE;
  */
 static void USBH_UserProcess(USBH_HandleTypeDef *phost, uint8_t id);
 
+ApplicationTypeDef USBH_GetAppliState(void)
+{
+  return Appli_state;
+}
+
 /*
  * -- Insert your external function declaration here --
  */

@@ -85,10 +85,21 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 void StartUsbTask(void *argument)
 {
+  uint8_t state = 0;
+  uint8_t state_prev = 0;
+
   MX_USB_HOST_Init();
 
   for(;;)
   {
+    state = USBH_GetAppliState() == APPLICATION_READY;
+    if(state) {
+
+    } else {
+
+    }
+
+    state_prev = state;
     osDelay(1);
   }
 }

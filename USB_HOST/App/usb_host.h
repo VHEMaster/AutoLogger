@@ -70,6 +70,8 @@ typedef enum {
 /** @brief USB Host initialization function. */
 void MX_USB_HOST_Init(void);
 
+ApplicationTypeDef USBH_GetAppliState(void);
+
 /**
   * @}
   */
