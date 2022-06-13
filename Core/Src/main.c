@@ -7,6 +7,8 @@
 IWDG_HandleTypeDef hiwdg;
 
 RTC_HandleTypeDef hrtc;
+RTC_TimeTypeDef sTime;
+RTC_DateTypeDef sDate;
 
 SD_HandleTypeDef hsd;
 DMA_HandleTypeDef hdma_sdio_rx;
@@ -222,14 +224,20 @@ static void MX_RTC_Init(void)
 
   sDate.Date = 1;
   sDate.Month = 5;
-  sDate.Year = 2022;
+  sDate.Year = 22;
 
   sTime.Hours = 9;
   sTime.Minutes = 0;
   sTime.Seconds = 0;
 
-  HAL_RTC_SetTime(&hrtc, &sTime, FORMAT_BIN);
-  HAL_RTC_SetDate(&hrtc, &sDate, FORMAT_BIN);
+  if (HAL_RTC_SetTime(&hrtc, &sTime, FORMAT_BIN) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_RTC_SetDate(&hrtc, &sDate, FORMAT_BIN) != HAL_OK)
+  {
+    Error_Handler();
+  }
 
 
   /* USER CODE END RTC_Init 2 */

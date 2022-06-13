@@ -22,9 +22,11 @@
 #include "main.h"
 #include "usb_host.h"
 #include "fatfs.h"
+#include "xProFIFO.h"
 
-RTC_TimeTypeDef sTime;
-RTC_DateTypeDef sDate;
+extern RTC_HandleTypeDef hrtc;
+extern RTC_TimeTypeDef sTime;
+extern RTC_DateTypeDef sDate;
 
 /* Definitions for defaultTask */
 osThreadId_t h_task_time;
