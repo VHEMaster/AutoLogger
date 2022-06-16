@@ -167,6 +167,7 @@ struct sLogDriver {
     sParameters parameters;
     uint64_t InitTime64;
     uint64_t diff;
+    uint64_t sync_last;
 
     eLed led;
     FATFS *fatfs;
@@ -243,6 +244,8 @@ static void driver_loop(struct sLogDriver *driver)
       sprintf(driver->filename, "%s/log_%05hu.eculog", driver->path, driver->filenumber);
       driver->fres = f_open(driver->file, driver->filename, FA_CREATE_ALWAYS | FA_WRITE);
       if(driver->fres != FR_OK) { continue; }
+      driver->fres = f_sync(driver->file);
+      if(driver->fres != FR_OK) { f_close(driver->file); continue; }
       driver->fres = f_write(driver->file, gFileHeader, strlen(gFileHeader), &driver->wrote);
       if(driver->fres != FR_OK) { f_close(driver->file); continue; }
       driver->fres = f_sync(driver->file);
@@ -250,6 +253,7 @@ static void driver_loop(struct sLogDriver *driver)
 
       driver->initialized = 1;
       driver->InitTime64 = gTick64;
+      driver->sync_last = gTick64;
 
       led_set(driver->led, LedOn);
       led_set_post(driver->led, LedOn);
@@ -294,8 +298,10 @@ static void driver_loop(struct sLogDriver *driver)
 
       }
 
-      driver->fres = f_sync(driver->file);
-      if(driver->fres != FR_OK) { f_close(driver->file); driver->initialized = 0; continue; }
+      if(gTick64 - driver->sync_last > 200) {
+        driver->fres = f_sync(driver->file);
+        if(driver->fres != FR_OK) { f_close(driver->file); driver->initialized = 0; continue; }
+      }
 
       led_set(driver->led, LedShortSingle);
     } else {
