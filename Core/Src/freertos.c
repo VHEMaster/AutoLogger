@@ -103,7 +103,7 @@ const uint8_t gFileFormats[] = {
   2,2,2,2,2,2,2,2,2,2,2,2,2,2,2
 };
 
-#define PARAMS_BUFFER_SIZE 32
+#define PARAMS_BUFFER_SIZE 52
 static sParameters gParamsBuffer[2][PARAMS_BUFFER_SIZE];
 static sProFIFO gParamsFifo[2];
 
