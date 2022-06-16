@@ -37,6 +37,22 @@ static void MX_RTC_Init(void);
 static void MX_TIM7_Init(void);
 extern void tasksInit(void);
 
+extern void can_rxfifopendingcallback(CAN_HandleTypeDef *_hcan, uint32_t fifo);
+
+void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
+{
+  if(hcan == &hcan1) {
+    can_rxfifopendingcallback(hcan, CAN_RX_FIFO0);
+  }
+}
+
+void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
+{
+  if(hcan == &hcan1) {
+    can_rxfifopendingcallback(hcan, CAN_RX_FIFO1);
+  }
+}
+
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -157,7 +173,7 @@ static void MX_CAN1_Init(void)
   hcan1.Init.TimeTriggeredMode = DISABLE;
   hcan1.Init.AutoBusOff = DISABLE;
   hcan1.Init.AutoWakeUp = DISABLE;
-  hcan1.Init.AutoRetransmission = DISABLE;
+  hcan1.Init.AutoRetransmission = ENABLE;
   hcan1.Init.ReceiveFifoLocked = DISABLE;
   hcan1.Init.TransmitFifoPriority = DISABLE;
   if (HAL_CAN_Init(&hcan1) != HAL_OK)
@@ -333,7 +349,7 @@ static void MX_USART1_UART_Init(void)
 
   /* USER CODE END USART1_Init 1 */
   huart1.Instance = USART1;
-  huart1.Init.BaudRate = 115200;
+  huart1.Init.BaudRate = 10400;
   huart1.Init.WordLength = UART_WORDLENGTH_8B;
   huart1.Init.StopBits = UART_STOPBITS_1;
   huart1.Init.Parity = UART_PARITY_NONE;
