@@ -487,7 +487,7 @@ void StartCanTask(void *argument)
         if(status == HAL_OK) {
           last_send = gTick64;
           need_send = 0;
-          free_level &= 1 << mailbox;
+          free_level &= ~(1 << mailbox);
 
           if(!pinged) {
             led_set(LedCan, LedShort);
@@ -512,9 +512,10 @@ void StartCanTask(void *argument)
 
 void StartKlineTask(void *argument)
 {
+  led_set(LedKline, LedOff);
   for(;;)
   {
-    osDelay(1);
+    osDelay(1000);
   }
 }
 
