@@ -52,6 +52,7 @@ static sCanMessage canrxbuffer[CAN_RX_BUFFER_COUNT];
 
 extern CAN_HandleTypeDef hcan1;
 extern UART_HandleTypeDef huart1;
+extern IWDG_HandleTypeDef hiwdg;
 
 extern RTC_HandleTypeDef hrtc;
 extern RTC_TimeTypeDef sTime;
@@ -368,6 +369,7 @@ void StartCanTask(void *argument)
   uint32_t mailbox;
   uint8_t need_send = 0;
   uint64_t last_send = 0;
+  uint64_t last_iwdg = 0;
   uint64_t diff = 0;
   sParameters parameters = {0};
   uint32_t *params_ptr = (uint32_t *)&parameters;
@@ -460,7 +462,7 @@ void StartCanTask(void *argument)
 
     if(!need_send) {
       diff = gTick64 - last_send;
-      if(diff > 50000)
+      if(diff > 50)
         need_send = 1;
     }
 
@@ -503,6 +505,11 @@ void StartCanTask(void *argument)
     }
 
     osDelay(1);
+    diff = gTick64 - last_iwdg;
+    if(diff > 100) {
+      HAL_IWDG_Refresh(&hiwdg);
+      last_iwdg = gTick64;
+    }
   }
 
   can_error:
@@ -512,7 +519,8 @@ void StartCanTask(void *argument)
 
   while(1)
   {
-   osDelay(1000);
+   HAL_IWDG_Refresh(&hiwdg);
+   osDelay(100);
   }
 }
 

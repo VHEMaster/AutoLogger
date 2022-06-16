@@ -74,11 +74,11 @@ int main(void)
 
   MX_GPIO_Init();
   MX_DMA_Init();
+  MX_IWDG_Init();
   MX_SDIO_SD_Init();
   MX_USART1_UART_Init();
   MX_FATFS_Init();
   MX_CAN1_Init();
-  //MX_IWDG_Init();
   MX_RTC_Init();
   MX_TIM7_Init();
 
