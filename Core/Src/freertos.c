@@ -83,9 +83,9 @@ char *uint64_to_str(uint64_t n, char dest[static 21]) {
 
 const char *gFileHeader = "TimePoint,CurrentTableName,SwitchPosition,CurrentTable,InjectorChannel,AdcKnockVoltage,AdcAirTemp,AdcEngineTemp,"
   "AdcManifoldAirPressure,AdcThrottlePosition,AdcPowerVoltage,AdcReferenceVoltage,AdcLambdaUR,AdcLambdaUA,KnockSensor,KnockSensorFiltered,"
-  "AirTemp,EngineTemp,ManifoldAirPressure,ThrottlePosition,ReferenceVoltage,PowerVoltage,FuelRatio,LambdaValue,LambdaTemperature,"
-  "LambdaHeaterVoltage,LambdaTemperatureVoltage,ShortTermCorrection,LongTermCorrection,IdleCorrection,IdleFlag,RPM,Speed,Acceleration,"
-  "MassAirFlow,CyclicAirFlow,EffectiveVolume,AirDestiny,RelativeFilling,WishFuelRatio,IdleValvePosition,WishIdleRPM,WishIdleMassAirFlow,"
+  "AirTemp,EngineTemp,ManifoldAirPressure,ThrottlePosition,ReferenceVoltage,PowerVoltage,FuelRatio,FuelRatioDiff,LambdaValue,LambdaTemperature,"
+  "LambdaHeaterVoltage,LambdaTemperatureVoltage,ShortTermCorrection,LongTermCorrection,IdleCorrection,IdleFlag,IdleCorrFlag,RPM,Speed,Acceleration,"
+  "MassAirFlow,CyclicAirFlow,EffectiveVolume,AirDestiny,RelativeFilling,WishFuelRatio,IdleValvePosition,IdleRegThrRPM,WishIdleRPM,WishIdleMassAirFlow,"
   "WishIdleValvePosition,WishIdleIgnitionAngle,IgnitionAngle,InjectionPhase,InjectionPhaseDuration,InjectionPulse,InjectionDutyCycle,"
   "InjectionEnrichment,InjectionLag,IgnitionPulse,IdleSpeedShift,DrivenKilometers,FuelConsumed,FuelConsumption,FuelHourly,TspsRelativePosition,"
   "LambdaValid,OilSensor,StarterSensor,HandbrakeSensor,ChargeSensor,ClutchSensor,IgnSensor,FuelPumpRelay,FanRelay,CheckEngine,StarterRelay,"
@@ -99,9 +99,9 @@ const char *gFileHeader = "TimePoint,CurrentTableName,SwitchPosition,CurrentTabl
  */
 const uint8_t gFileFormats[] = {
   1,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
-  3,3,3,3,3,3,3,3,3,3,2,3,3,3,3,3,3,3,3,3,
-  3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,
-  2,2,2,2,2,2,2,2,2,2,2,2,2,2,2
+  3,3,3,3,3,3,3,3,3,3,3,2,2,3,3,3,3,3,3,3,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+  3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2
 };
 
 #define PARAMS_BUFFER_SIZE 52
