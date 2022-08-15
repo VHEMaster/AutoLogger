@@ -88,8 +88,8 @@ const char *gFileHeader = "TimePoint,CurrentTableName,SwitchPosition,CurrentTabl
   "MassAirFlow,CyclicAirFlow,EffectiveVolume,AirDestiny,RelativeFilling,WishFuelRatio,IdleValvePosition,IdleRegThrRPM,WishIdleRPM,WishIdleMassAirFlow,"
   "WishIdleValvePosition,WishIdleIgnitionAngle,IgnitionAngle,InjectionPhase,InjectionPhaseDuration,InjectionPulse,InjectionDutyCycle,"
   "InjectionEnrichment,InjectionLag,IgnitionPulse,IdleSpeedShift,DrivenKilometers,FuelConsumed,FuelConsumption,FuelHourly,TspsRelativePosition,"
-  "LambdaValid,OilSensor,StarterSensor,HandbrakeSensor,ChargeSensor,ClutchSensor,IgnSensor,FuelPumpRelay,FanRelay,CheckEngine,StarterRelay,"
-  "Rsvd1Output,IgnOutput,StartAllowed,IsRunning,IsCheckEngine\r\n";
+  "LambdaValid,OilSensor,FanForceSwitch,HandbrakeSensor,ChargeSensor,ClutchSensor,IgnSensor,FuelPumpRelay,FanRelay,CheckEngine,StarterRelay,"
+  "FanSwitch,IgnOutput,StartAllowed,IsRunning,IsCheckEngine\r\n";
 
 /*
  * 0 = uint64_t
