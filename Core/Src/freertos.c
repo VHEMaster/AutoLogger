@@ -81,15 +81,15 @@ char *uint64_to_str(uint64_t n, char dest[static 21]) {
 #define LOG10_FROM_2_TO_64_PLUS_1  21
 #define UINT64_TO_STR(n)  uint64_to_str(n, (char[21]){0})
 
-const char *gFileHeader = "TimePoint,CurrentTableName,SwitchPosition,CurrentTable,InjectorChannel,AdcKnockVoltage,AdcAirTemp,AdcEngineTemp,"
-  "AdcManifoldAirPressure,AdcThrottlePosition,AdcPowerVoltage,AdcReferenceVoltage,AdcLambdaUR,AdcLambdaUA,KnockSensor,KnockSensorFiltered,"
-  "AirTemp,EngineTemp,ManifoldAirPressure,ThrottlePosition,ReferenceVoltage,PowerVoltage,FuelRatio,FuelRatioDiff,LambdaValue,LambdaTemperature,"
-  "LambdaHeaterVoltage,LambdaTemperatureVoltage,ShortTermCorrection,LongTermCorrection,IdleCorrection,IdleFlag,IdleCorrFlag,RPM,Speed,Acceleration,"
-  "MassAirFlow,CyclicAirFlow,EffectiveVolume,AirDestiny,RelativeFilling,WishFuelRatio,IdleValvePosition,IdleRegThrRPM,WishIdleRPM,WishIdleMassAirFlow,"
-  "WishIdleValvePosition,WishIdleIgnitionAngle,IgnitionAngle,InjectionPhase,InjectionPhaseDuration,InjectionPulse,InjectionDutyCycle,"
-  "InjectionEnrichment,InjectionLag,IgnitionPulse,IdleSpeedShift,DrivenKilometers,FuelConsumed,FuelConsumption,FuelHourly,TspsRelativePosition,"
-  "LambdaValid,OilSensor,FanForceSwitch,HandbrakeSensor,ChargeSensor,ClutchSensor,IgnSensor,FuelPumpRelay,FanRelay,CheckEngine,StarterRelay,"
-  "FanSwitch,IgnOutput,StartAllowed,IsRunning,IsCheckEngine\r\n";
+const char *gFileHeader = "TimePoint,,CurrentTableName,SwitchPosition,CurrentTable,InjectorChannel,AdcKnockVoltage,AdcAirTemp,AdcEngineTemp,"
+    "AdcManifoldAirPressure,AdcThrottlePosition,AdcPowerVoltage,AdcReferenceVoltage,AdcLambdaUR,AdcLambdaUA,KnockSensor,KnockSensorFiltered,"
+    "KnockSensorDetonate,KnockZone,KnockAdvance,KnockCount,AirTemp,EngineTemp,ManifoldAirPressure,ThrottlePosition,ReferenceVoltage,PowerVoltage,"
+    "FuelRatio,FuelRatioDiff,LambdaValue,LambdaTemperature,LambdaHeaterVoltage,LambdaTemperatureVoltage,ShortTermCorrection,LongTermCorrection,"
+    "IdleCorrection,IdleFlag,IdleCorrFlag,RPM,Speed,Acceleration,MassAirFlow,CyclicAirFlow,EffectiveVolume,AirDestiny,RelativeFilling,WishFuelRatio,"
+    "IdleValvePosition,IdleRegThrRPM,WishIdleRPM,WishIdleMassAirFlow,WishIdleValvePosition,WishIdleIgnitionAngle,IgnitionAngle,InjectionPhase,"
+    "InjectionPhaseDuration,InjectionPulse,InjectionDutyCycle,InjectionEnrichment,InjectionLag,IgnitionPulse,IdleSpeedShift,DrivenKilometers,"
+    "FuelConsumed,FuelConsumption,FuelHourly,TspsRelativePosition,LambdaValid,OilSensor,FanForceSwitch,HandbrakeSensor,ChargeSensor,ClutchSensor,"
+    "IgnSensor,FuelPumpRelay,FanRelay,CheckEngine,StarterRelay,FanSwitch,IgnOutput,StartAllowed,IsRunning,IsCheckEngine\r\n";
 
 /*
  * 0 = uint64_t
@@ -98,10 +98,11 @@ const char *gFileHeader = "TimePoint,CurrentTableName,SwitchPosition,CurrentTabl
  * 3 = float
  */
 const uint8_t gFileFormats[] = {
-  1,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
-  3,3,3,3,3,3,3,3,3,3,3,2,2,3,3,3,3,3,3,3,
-  3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
-  3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2
+  1,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,2,3,3,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+  3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,
+  2,2,2,2,2
 };
 
 #define PARAMS_BUFFER_SIZE 52
