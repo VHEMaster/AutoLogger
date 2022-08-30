@@ -81,7 +81,7 @@ char *uint64_to_str(uint64_t n, char dest[static 21]) {
 #define LOG10_FROM_2_TO_64_PLUS_1  21
 #define UINT64_TO_STR(n)  uint64_to_str(n, (char[21]){0})
 
-const char *gFileHeader = "TimePoint,,CurrentTableName,SwitchPosition,CurrentTable,InjectorChannel,AdcKnockVoltage,AdcAirTemp,AdcEngineTemp,"
+const char *gFileHeader = "TimePoint,CurrentTableName,SwitchPosition,CurrentTable,InjectorChannel,AdcKnockVoltage,AdcAirTemp,AdcEngineTemp,"
     "AdcManifoldAirPressure,AdcThrottlePosition,AdcPowerVoltage,AdcReferenceVoltage,AdcLambdaUR,AdcLambdaUA,KnockSensor,KnockSensorFiltered,"
     "KnockSensorDetonate,KnockZone,KnockAdvance,KnockCount,AirTemp,EngineTemp,ManifoldAirPressure,ThrottlePosition,ReferenceVoltage,PowerVoltage,"
     "FuelRatio,FuelRatioDiff,LambdaValue,LambdaTemperature,LambdaHeaterVoltage,LambdaTemperatureVoltage,ShortTermCorrection,LongTermCorrection,"
@@ -111,31 +111,31 @@ static sProFIFO gParamsFifo[2];
 
 const osThreadAttr_t attrs_task_time = {
   .name = "taskTime",
-  .stack_size = 128 * 4,
+  .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityHigh,
 };
 
 const osThreadAttr_t attrs_task_usb = {
   .name = "taskUsb",
-  .stack_size = 1024 * 4,
+  .stack_size = 2048 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 
 const osThreadAttr_t attrs_task_sdio = {
   .name = "taskSdio",
-  .stack_size = 1024 * 4,
+  .stack_size = 2048 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 
 const osThreadAttr_t attrs_task_can = {
   .name = "taskCan",
-  .stack_size = 128 * 4,
+  .stack_size = 2048 * 4,
   .priority = (osPriority_t) osPriorityAboveNormal,
 };
 
 const osThreadAttr_t attrs_task_kline = {
   .name = "taskKline",
-  .stack_size = 128 * 4,
+  .stack_size = 2048 * 4,
   .priority = (osPriority_t) osPriorityAboveNormal,
 };
 
@@ -379,7 +379,7 @@ void StartCanTask(void *argument)
   uint32_t pos_send = 0;
   uint8_t pinged = 0;
 
-  uint16_t filter_id = 0x110;
+  uint16_t filter_id = 0x200;
   uint16_t filter_mask = 0x7F0;
 
   memset(msgs_bitmap, 0, sizeof(msgs_bitmap));
@@ -400,13 +400,17 @@ void StartCanTask(void *argument)
   can_filter.FilterMaskIdLow = 0;
   can_filter.FilterMode = CAN_FILTERMODE_IDMASK;
   can_filter.FilterScale = CAN_FILTERSCALE_32BIT;
-  can_filter.SlaveStartFilterBank = 13;
+  can_filter.SlaveStartFilterBank = 14;
 
   status = HAL_CAN_ConfigFilter(&hcan1, &can_filter);
   if(status != HAL_OK)
     goto can_error;
 
   status = HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_RX_FIFO1_MSG_PENDING);
+  if(status != HAL_OK)
+    goto can_error;
+
+  status = HAL_CAN_ActivateNotification(&hcan1, CAN_IT_ERROR_WARNING | CAN_IT_ERROR_PASSIVE | CAN_IT_BUSOFF | CAN_IT_LAST_ERROR_CODE | CAN_IT_ERROR);
   if(status != HAL_OK)
     goto can_error;
 
@@ -421,7 +425,7 @@ void StartCanTask(void *argument)
   for(;;)
   {
     if(protPull(&canrxfifo, &message)) {
-      if(message.id == 0x112) {
+      if(message.id == 0x202) {
         if(message.rtr == CAN_RTR_DATA && message.length == 8) {
           if(message.data.dwords[0] < sizeof(sParameters) / sizeof(uint32_t)) {
             led_set(LedCan, LedShort);
@@ -430,7 +434,7 @@ void StartCanTask(void *argument)
             isoktosend = 1;
             pos_send = 0;
             for(int i = 0; i < sizeof(sParameters) / sizeof(uint32_t); i++) {
-              if(msgs_bitmap[i >> 3] |= (1 << (i & 7)) == 0) {
+              if((msgs_bitmap[i >> 3] & (1 << (i & 7))) == 0) {
                 pos_send = i;
                 isoktosend = 0;
                 break;
@@ -438,8 +442,10 @@ void StartCanTask(void *argument)
             }
             if(isoktosend) {
               isoktosend = 0;
-              for(int i = 0; ITEMSOF(gParamsBuffer); i++) {
-                protPush(&gParamsFifo[i], &parameters);
+              for(int i = 0; i < ITEMSOF(gParamsFifo); i++) {
+                if(gParamsFifo[i].buffer && gParamsFifo[i].info.capacity) {
+                  protPush(&gParamsFifo[i], &parameters);
+                }
               }
               memset(msgs_bitmap, 0, sizeof(msgs_bitmap));
               pos_send = 0;
@@ -447,7 +453,7 @@ void StartCanTask(void *argument)
             need_send = 1;
           }
           }
-      } else if(message.id == 0x110) {
+      } else if(message.id == 0x200) {
         if(message.rtr == CAN_RTR_DATA && message.length == 5) {
           if(message.data.bytes[0] == 0x10 &&
               message.data.bytes[1] == 0xB5 &&
@@ -474,12 +480,12 @@ void StartCanTask(void *argument)
         if(pinged) {
           message.id = 0x102;
           message.length = 4;
-          message.rtr = CAN_RTR_REMOTE;
+          message.rtr = CAN_RTR_DATA;
           message.data.dwords[0] = pos_send;
         } else {
           message.id = 0x100;
           message.length = 5;
-          message.rtr = CAN_RTR_REMOTE;
+          message.rtr = CAN_RTR_DATA;
           message.data.bytes[0] = 0x10;
           message.data.bytes[1] = 0xB5;
           message.data.bytes[2] = 0xDA;
