@@ -85,7 +85,7 @@ const char *gFileHeader = "TimePoint,CurrentTableName,SwitchPosition,CurrentTabl
     "AdcManifoldAirPressure,AdcThrottlePosition,AdcPowerVoltage,AdcReferenceVoltage,AdcLambdaUR,AdcLambdaUA,KnockSensor,KnockSensorFiltered,"
     "KnockSensorDetonate,KnockZone,KnockAdvance,KnockCount,AirTemp,EngineTemp,ManifoldAirPressure,ThrottlePosition,ReferenceVoltage,PowerVoltage,"
     "FuelRatio,FuelRatioDiff,LambdaValue,LambdaTemperature,LambdaHeaterVoltage,LambdaTemperatureVoltage,ShortTermCorrection,LongTermCorrection,"
-    "IdleCorrection,IdleFlag,IdleCorrFlag,RPM,Speed,Acceleration,MassAirFlow,CyclicAirFlow,EffectiveVolume,AirDestiny,RelativeFilling,WishFuelRatio,"
+    "IdleCorrection,IdleFlag,IdleCorrFlag,IdleEconFlag,RPM,Speed,Acceleration,MassAirFlow,CyclicAirFlow,EffectiveVolume,AirDestiny,RelativeFilling,WishFuelRatio,"
     "IdleValvePosition,IdleRegThrRPM,WishIdleRPM,WishIdleMassAirFlow,WishIdleValvePosition,WishIdleIgnitionAngle,IgnitionAngle,InjectionPhase,"
     "InjectionPhaseDuration,InjectionPulse,InjectionDutyCycle,InjectionEnrichment,InjectionLag,IgnitionPulse,IdleSpeedShift,DrivenKilometers,"
     "FuelConsumed,FuelConsumption,FuelHourly,TspsRelativePosition,LambdaValid,OilSensor,FanForceSwitch,HandbrakeSensor,ChargeSensor,ClutchSensor,"
@@ -99,10 +99,10 @@ const char *gFileHeader = "TimePoint,CurrentTableName,SwitchPosition,CurrentTabl
  */
 const uint8_t gFileFormats[] = {
   1,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,
-  3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,2,3,3,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,2,2,3,
   3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
-  3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,
-  2,2,2,2,2
+  3,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,
+  2,2,2,2,2,2
 };
 
 #define PARAMS_BUFFER_SIZE 52
