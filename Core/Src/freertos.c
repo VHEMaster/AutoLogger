@@ -81,15 +81,16 @@ char *uint64_to_str(uint64_t n, char dest[static 21]) {
 #define LOG10_FROM_2_TO_64_PLUS_1  21
 #define UINT64_TO_STR(n)  uint64_to_str(n, (char[21]){0})
 
-const char *gFileHeader = "TimePoint,CurrentTableName,SwitchPosition,CurrentTable,InjectorChannel,AdcKnockVoltage,AdcAirTemp,AdcEngineTemp,"
-    "AdcManifoldAirPressure,AdcThrottlePosition,AdcPowerVoltage,AdcReferenceVoltage,AdcLambdaUR,AdcLambdaUA,KnockSensor,KnockSensorFiltered,"
-    "KnockSensorDetonate,KnockZone,KnockAdvance,KnockCount,AirTemp,EngineTemp,ManifoldAirPressure,ThrottlePosition,ReferenceVoltage,PowerVoltage,"
-    "FuelRatio,FuelRatioDiff,LambdaValue,LambdaTemperature,LambdaHeaterVoltage,LambdaTemperatureVoltage,ShortTermCorrection,LongTermCorrection,"
-    "IdleCorrection,IdleFlag,IdleCorrFlag,IdleEconFlag,RPM,Speed,Acceleration,MassAirFlow,CyclicAirFlow,EffectiveVolume,AirDestiny,RelativeFilling,WishFuelRatio,"
-    "IdleValvePosition,IdleRegThrRPM,WishIdleRPM,WishIdleMassAirFlow,WishIdleValvePosition,WishIdleIgnitionAngle,IgnitionAngle,InjectionPhase,"
-    "InjectionPhaseDuration,InjectionPulse,InjectionDutyCycle,InjectionEnrichment,InjectionLag,IgnitionPulse,IdleSpeedShift,DrivenKilometers,"
-    "FuelConsumed,FuelConsumption,FuelHourly,TspsRelativePosition,LambdaValid,OilSensor,FanForceSwitch,HandbrakeSensor,ChargeSensor,ClutchSensor,"
-    "IgnSensor,FuelPumpRelay,FanRelay,CheckEngine,StarterRelay,FanSwitch,IgnOutput,StartAllowed,IsRunning,IsCheckEngine\r\n";
+typedef struct {
+    const char *name;
+    uint8_t type;
+    uint32_t offset;
+    union {
+        uint32_t u;
+        float f;
+        uint8_t b[4];
+    } value;
+}sParameter;
 
 /*
  * 0 = uint64_t
@@ -97,13 +98,94 @@ const char *gFileHeader = "TimePoint,CurrentTableName,SwitchPosition,CurrentTabl
  * 2 = int32_t
  * 3 = float
  */
-const uint8_t gFileFormats[] = {
-  1,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,
-  3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,2,2,3,
-  3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
-  3,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,
-  2,2,2,2,2,2
+
+sParameter gParameters[] = {
+    {"CurrentTableName",          1, OFFSETOF(sParameters, CurrentTableName), {0}},
+    {"SwitchPosition",            2, OFFSETOF(sParameters, SwitchPosition), {0}},
+    {"CurrentTable",              2, OFFSETOF(sParameters, CurrentTable), {0}},
+    {"InjectorChannel",           2, OFFSETOF(sParameters, InjectorChannel), {0}},
+    {"AdcKnockVoltage",           3, OFFSETOF(sParameters, AdcKnockVoltage), {0}},
+    {"AdcAirTemp",                3, OFFSETOF(sParameters, AdcAirTemp), {0}},
+    {"AdcEngineTemp",             3, OFFSETOF(sParameters, AdcEngineTemp), {0}},
+    {"AdcManifoldAirPressure",    3, OFFSETOF(sParameters, AdcManifoldAirPressure), {0}},
+    {"AdcThrottlePosition",       3, OFFSETOF(sParameters, AdcThrottlePosition), {0}},
+    {"AdcPowerVoltage",           3, OFFSETOF(sParameters, AdcPowerVoltage), {0}},
+    {"AdcReferenceVoltage",       3, OFFSETOF(sParameters, AdcReferenceVoltage), {0}},
+    {"AdcLambdaUR",               3, OFFSETOF(sParameters, AdcLambdaUR), {0}},
+    {"AdcLambdaUA",               3, OFFSETOF(sParameters, AdcLambdaUA), {0}},
+    {"KnockSensor",               3, OFFSETOF(sParameters, KnockSensor), {0}},
+    {"KnockSensorFiltered",       3, OFFSETOF(sParameters, KnockSensorFiltered), {0}},
+    {"KnockSensorDetonate",       3, OFFSETOF(sParameters, KnockSensorDetonate), {0}},
+    {"KnockZone",                 3, OFFSETOF(sParameters, KnockZone), {0}},
+    {"KnockAdvance",              3, OFFSETOF(sParameters, KnockAdvance), {0}},
+    {"KnockCount",                2, OFFSETOF(sParameters, KnockCount), {0}},
+    {"AirTemp",                   3, OFFSETOF(sParameters, AirTemp), {0}},
+    {"EngineTemp",                3, OFFSETOF(sParameters, EngineTemp), {0}},
+    {"ManifoldAirPressure",       3, OFFSETOF(sParameters, ManifoldAirPressure), {0}},
+    {"ThrottlePosition",          3, OFFSETOF(sParameters, ThrottlePosition), {0}},
+    {"ReferenceVoltage",          3, OFFSETOF(sParameters, ReferenceVoltage), {0}},
+    {"PowerVoltage",              3, OFFSETOF(sParameters, PowerVoltage), {0}},
+    {"FuelRatio",                 3, OFFSETOF(sParameters, FuelRatio), {0}},
+    {"FuelRatioDiff",             3, OFFSETOF(sParameters, FuelRatioDiff), {0}},
+    {"LambdaValue",               3, OFFSETOF(sParameters, LambdaValue), {0}},
+    {"LambdaTemperature",         3, OFFSETOF(sParameters, LambdaTemperature), {0}},
+    {"LambdaHeaterVoltage",       3, OFFSETOF(sParameters, LambdaHeaterVoltage), {0}},
+    {"LambdaTemperatureVoltage",  3, OFFSETOF(sParameters, LambdaTemperatureVoltage), {0}},
+    {"ShortTermCorrection",       3, OFFSETOF(sParameters, ShortTermCorrection), {0}},
+    {"LongTermCorrection",        3, OFFSETOF(sParameters, LongTermCorrection), {0}},
+    {"IdleCorrection",            3, OFFSETOF(sParameters, IdleCorrection), {0}},
+    {"IdleFlag",                  2, OFFSETOF(sParameters, IdleFlag), {0}},
+    {"IdleCorrFlag",              2, OFFSETOF(sParameters, IdleCorrFlag), {0}},
+    {"IdleEconFlag",              2, OFFSETOF(sParameters, IdleEconFlag), {0}},
+    {"RPM",                       3, OFFSETOF(sParameters, RPM), {0}},
+    {"Speed",                     3, OFFSETOF(sParameters, Speed), {0}},
+    {"Acceleration",              3, OFFSETOF(sParameters, Acceleration), {0}},
+    {"MassAirFlow",               3, OFFSETOF(sParameters, MassAirFlow), {0}},
+    {"CyclicAirFlow",             3, OFFSETOF(sParameters, CyclicAirFlow), {0}},
+    {"EffectiveVolume",           3, OFFSETOF(sParameters, EffectiveVolume), {0}},
+    {"AirDestiny",                3, OFFSETOF(sParameters, AirDestiny), {0}},
+    {"RelativeFilling",           3, OFFSETOF(sParameters, RelativeFilling), {0}},
+    {"WishFuelRatio",             3, OFFSETOF(sParameters, WishFuelRatio), {0}},
+    {"IdleValvePosition",         3, OFFSETOF(sParameters, IdleValvePosition), {0}},
+    {"IdleRegThrRPM",             3, OFFSETOF(sParameters, IdleRegThrRPM), {0}},
+    {"WishIdleRPM",               3, OFFSETOF(sParameters, WishIdleRPM), {0}},
+    {"WishIdleMassAirFlow",       3, OFFSETOF(sParameters, WishIdleMassAirFlow), {0}},
+    {"WishIdleValvePosition",     3, OFFSETOF(sParameters, WishIdleValvePosition), {0}},
+    {"WishIdleIgnitionAngle",     3, OFFSETOF(sParameters, WishIdleIgnitionAngle), {0}},
+    {"IgnitionAngle",             3, OFFSETOF(sParameters, IgnitionAngle), {0}},
+    {"InjectionPhase",            3, OFFSETOF(sParameters, InjectionPhase), {0}},
+    {"InjectionPhaseDuration",    3, OFFSETOF(sParameters, InjectionPhaseDuration), {0}},
+    {"InjectionPulse",            3, OFFSETOF(sParameters, InjectionPulse), {0}},
+    {"InjectionDutyCycle",        3, OFFSETOF(sParameters, InjectionDutyCycle), {0}},
+    {"InjectionEnrichment",       3, OFFSETOF(sParameters, InjectionEnrichment), {0}},
+    {"InjectionLag",              3, OFFSETOF(sParameters, InjectionLag), {0}},
+    {"IgnitionPulse",             3, OFFSETOF(sParameters, IgnitionPulse), {0}},
+    {"IdleSpeedShift",            3, OFFSETOF(sParameters, IdleSpeedShift), {0}},
+    {"DrivenKilometers",          3, OFFSETOF(sParameters, DrivenKilometers), {0}},
+    {"FuelConsumed",              3, OFFSETOF(sParameters, FuelConsumed), {0}},
+    {"FuelConsumption",           3, OFFSETOF(sParameters, FuelConsumption), {0}},
+    {"FuelHourly",                3, OFFSETOF(sParameters, FuelHourly), {0}},
+    {"TspsRelativePosition",      3, OFFSETOF(sParameters, TspsRelativePosition), {0}},
+    {"LambdaValid",               2, OFFSETOF(sParameters, LambdaValid), {0}},
+    {"OilSensor",                 2, OFFSETOF(sParameters, OilSensor), {0}},
+    {"FanForceSwitch",            2, OFFSETOF(sParameters, FanForceSwitch), {0}},
+    {"HandbrakeSensor",           2, OFFSETOF(sParameters, HandbrakeSensor), {0}},
+    {"ChargeSensor",              2, OFFSETOF(sParameters, ChargeSensor), {0}},
+    {"ClutchSensor",              2, OFFSETOF(sParameters, ClutchSensor), {0}},
+    {"IgnSensor",                 2, OFFSETOF(sParameters, IgnSensor), {0}},
+    {"FuelPumpRelay",             2, OFFSETOF(sParameters, FuelPumpRelay), {0}},
+    {"FanRelay",                  2, OFFSETOF(sParameters, FanRelay), {0}},
+    {"CheckEngine",               2, OFFSETOF(sParameters, CheckEngine), {0}},
+    {"StarterRelay",              2, OFFSETOF(sParameters, StarterRelay), {0}},
+    {"FanSwitch",                 2, OFFSETOF(sParameters, FanSwitch), {0}},
+    {"IgnOutput",                 2, OFFSETOF(sParameters, IgnOutput), {0}},
+    {"StartAllowed",              2, OFFSETOF(sParameters, StartAllowed), {0}},
+    {"IsRunning",                 2, OFFSETOF(sParameters, IsRunning), {0}},
+    {"IsCheckEngine",             2, OFFSETOF(sParameters, IsCheckEngine), {0}}
+
 };
+
+const char *gFileInitialHeader = "TimePoint";
 
 #define PARAMS_BUFFER_SIZE 52
 static sParameters gParamsBuffer[2][PARAMS_BUFFER_SIZE];
@@ -248,8 +330,24 @@ static void driver_loop(struct sLogDriver *driver)
       if(driver->fres != FR_OK) { continue; }
       driver->fres = f_sync(driver->file);
       if(driver->fres != FR_OK) { f_close(driver->file); continue; }
-      driver->fres = f_write(driver->file, gFileHeader, strlen(gFileHeader), &driver->wrote);
+
+      strcpy(driver->string, gFileInitialHeader);
+      driver->fres = f_write(driver->file, driver->string, strlen(driver->string), &driver->wrote);
       if(driver->fres != FR_OK) { f_close(driver->file); continue; }
+
+      for(int i = 0; i < ITEMSOF(gParameters); i++) {
+        strcpy(driver->string, ",");
+        strcat(driver->string, gParameters[i].name);
+        driver->fres = f_write(driver->file, driver->string, strlen(driver->string), &driver->wrote);
+        if(driver->fres != FR_OK)
+          break;
+      }
+      if(driver->fres != FR_OK) { f_close(driver->file); continue; }
+
+      strcpy(driver->string, "\r\n");
+      driver->fres = f_write(driver->file, driver->string, strlen(driver->string), &driver->wrote);
+      if(driver->fres != FR_OK) { f_close(driver->file); continue; }
+
       driver->fres = f_sync(driver->file);
       if(driver->fres != FR_OK) { f_close(driver->file); continue; }
 
@@ -270,28 +368,25 @@ static void driver_loop(struct sLogDriver *driver)
       }
       driver->fres = f_write(driver->file, driver->string, strlen(driver->string), &driver->wrote);
       if(driver->fres != FR_OK) { f_close(driver->file); driver->initialized = 0; continue; }
-      for(int i = 0, j = 0; i < sizeof(driver->parameters) / sizeof(uint32_t); j++) {
-        driver->string[0] = ',';
-        driver->string[1] = '\0';
-        switch(gFileFormats[j]) {
+      for(int i = 0; i < ITEMSOF(gParameters);) {
+
+        strcpy(driver->string, ",");
+        const void *ptr = ((uint8_t *)&driver->parameters) + gParameters[i].offset;
+        switch(gParameters[i].type) {
           case 1:
-            sprintf(driver->string, "%s,", (const char *)&((uint32_t *)&driver->parameters)[i]);
+            sprintf(driver->string, "%s,", (const char *)ptr);
             break;
           case 2:
-            sprintf(driver->string, "%ld,", ((const int32_t *)&driver->parameters)[i]);
+            sprintf(driver->string, "%ld,", *(const int32_t *)ptr);
             break;
           case 3:
-            sprintf(driver->string, "%f,", ((const float *)&driver->parameters)[i]);
+            sprintf(driver->string, "%f,", *(const float *)ptr);
             break;
           default:
             break;
         }
-        if(i == 0) {
-          i += TABLE_STRING_MAX / sizeof(uint32_t);
-        } else {
-          i++;
-        }
-        if(i >= sizeof(driver->parameters) / sizeof(uint32_t)) {
+
+        if(++i >= ITEMSOF(gParameters)) {
           driver->string[strlen(driver->string) - 1] = '\0';
           strcat(driver->string, "\r\n");
         }
