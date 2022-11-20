@@ -100,7 +100,6 @@ typedef struct {
  */
 
 sParameter gParameters[] = {
-    {"CurrentTableName",          1, OFFSETOF(sParameters, CurrentTableName), {0}},
     {"SwitchPosition",            2, OFFSETOF(sParameters, SwitchPosition), {0}},
     {"CurrentTable",              2, OFFSETOF(sParameters, CurrentTable), {0}},
     {"InjectorChannel",           2, OFFSETOF(sParameters, InjectorChannel), {0}},
@@ -185,6 +184,11 @@ sParameter gParameters[] = {
 
 };
 
+#define BIT_GET(array,bit) ((array)[(bit) >> 3] & (1 << ((bit) & 7)))
+#define BIT_SET(array,bit)   ((array)[(bit) >> 3] |= (1 << ((bit) & 7)))
+#define BIT_RESET(array,bit)   ((array)[(bit) >> 3] &= ~(1 << ((bit) & 7)))
+static uint8_t gConfigBitmap[16] = {0};
+
 const char *gFileInitialHeader = "TimePoint";
 
 #define PARAMS_BUFFER_SIZE 52
@@ -262,6 +266,8 @@ struct sLogDriver {
 
 static void driver_loop(struct sLogDriver *driver)
 {
+  uint32_t readpos;
+
   led_set(driver->led, LedOff);
   led_set_post(driver->led, LedOff);
 
@@ -288,7 +294,38 @@ static void driver_loop(struct sLogDriver *driver)
 
       driver->was_initialized = 1;
 
-      sprintf(driver->filename, "%s/last.txt", driver->path);
+      sprintf(driver->filename, "%s/params.txt", driver->path);
+      driver->fres = f_open(driver->file, driver->filename, FA_OPEN_EXISTING | FA_READ);
+      if(driver->fres == FR_OK) {
+        if(f_size(driver->file) > 0) {
+          memset(gConfigBitmap, 0, sizeof(gConfigBitmap));
+          for(readpos = 0; readpos < sizeof(driver->string);) {
+            driver->fres = f_read(driver->file, &driver->string[readpos], 1, &driver->read);
+            if(driver->fres != FR_OK) { f_close(driver->file); continue; }
+            if(driver->string[readpos] == ',' || driver->string[readpos] == '\r' ||
+                driver->string[readpos] == '\n' || driver->string[readpos] == ' ' ||
+                driver->string[readpos] == '\0') {
+              if(readpos > 0) {
+                driver->string[readpos] = '\0';
+                for(int j = 0; j < ITEMSOF(gParameters); j++) {
+                  if(!strnstr(gParameters[j].name, driver->string, strlen(gParameters[j].name))) {
+                    BIT_SET(gConfigBitmap, j);
+                    break;
+                  }
+                }
+                readpos = 0;
+              }
+            } else {
+              readpos++;
+            }
+          }
+        }
+        f_close(driver->file);
+      } else if(driver->fres != FR_NO_FILE) {
+        continue;
+      }
+
+      sprintf(driver->filename, "%s/log_last.txt", driver->path);
       driver->fres = f_open(driver->file, driver->filename, FA_OPEN_EXISTING | FA_READ);
       if(driver->fres == FR_OK) {
         if(f_size(driver->file) >= sizeof(driver->string)) {
@@ -336,11 +373,13 @@ static void driver_loop(struct sLogDriver *driver)
       if(driver->fres != FR_OK) { f_close(driver->file); continue; }
 
       for(int i = 0; i < ITEMSOF(gParameters); i++) {
-        strcpy(driver->string, ",");
-        strcat(driver->string, gParameters[i].name);
-        driver->fres = f_write(driver->file, driver->string, strlen(driver->string), &driver->wrote);
-        if(driver->fres != FR_OK)
-          break;
+        if(BIT_GET(gConfigBitmap, i)) {
+          strcpy(driver->string, ",");
+          strcat(driver->string, gParameters[i].name);
+          driver->fres = f_write(driver->file, driver->string, strlen(driver->string), &driver->wrote);
+          if(driver->fres != FR_OK)
+            break;
+        }
       }
       if(driver->fres != FR_OK) { f_close(driver->file); continue; }
 
@@ -369,30 +408,30 @@ static void driver_loop(struct sLogDriver *driver)
       driver->fres = f_write(driver->file, driver->string, strlen(driver->string), &driver->wrote);
       if(driver->fres != FR_OK) { f_close(driver->file); driver->initialized = 0; continue; }
       for(int i = 0; i < ITEMSOF(gParameters);) {
+        if(BIT_GET(gConfigBitmap, i)) {
+          strcpy(driver->string, ",");
+          const void *ptr = ((uint8_t *)&driver->parameters) + gParameters[i].offset;
+          switch(gParameters[i].type) {
+            case 1:
+              sprintf(driver->string, "%s,", (const char *)ptr);
+              break;
+            case 2:
+              sprintf(driver->string, "%ld,", *(const int32_t *)ptr);
+              break;
+            case 3:
+              sprintf(driver->string, "%f,", *(const float *)ptr);
+              break;
+            default:
+              break;
+          }
 
-        strcpy(driver->string, ",");
-        const void *ptr = ((uint8_t *)&driver->parameters) + gParameters[i].offset;
-        switch(gParameters[i].type) {
-          case 1:
-            sprintf(driver->string, "%s,", (const char *)ptr);
-            break;
-          case 2:
-            sprintf(driver->string, "%ld,", *(const int32_t *)ptr);
-            break;
-          case 3:
-            sprintf(driver->string, "%f,", *(const float *)ptr);
-            break;
-          default:
-            break;
+          if(++i >= ITEMSOF(gParameters)) {
+            driver->string[strlen(driver->string) - 1] = '\0';
+            strcat(driver->string, "\r\n");
+          }
+          driver->fres = f_write(driver->file, driver->string, strlen(driver->string), &driver->wrote);
+          if(driver->fres != FR_OK) { f_close(driver->file); driver->initialized = 0; continue; }
         }
-
-        if(++i >= ITEMSOF(gParameters)) {
-          driver->string[strlen(driver->string) - 1] = '\0';
-          strcat(driver->string, "\r\n");
-        }
-        driver->fres = f_write(driver->file, driver->string, strlen(driver->string), &driver->wrote);
-        if(driver->fres != FR_OK) { f_close(driver->file); driver->initialized = 0; continue; }
-
       }
 
       if(gTick64 - driver->sync_last > 200) {
@@ -469,7 +508,7 @@ void StartCanTask(void *argument)
   uint64_t diff = 0;
   sParameters parameters = {0};
   uint32_t *params_ptr = (uint32_t *)&parameters;
-  uint8_t msgs_bitmap[64];
+  uint8_t msgs_bitmap[16];
   uint8_t isoktosend = 0;
   uint32_t pos_send = 0;
   uint8_t pinged = 0;
@@ -525,11 +564,11 @@ void StartCanTask(void *argument)
           if(message.data.dwords[0] < sizeof(sParameters) / sizeof(uint32_t)) {
             led_set(LedCan, LedShort);
             params_ptr[message.data.dwords[0]] = message.data.dwords[1];
-            msgs_bitmap[message.data.dwords[0] >> 3] |= (1 << (message.data.dwords[0] & 7));
+            BIT_SET(msgs_bitmap, message.data.dwords[0]);
             isoktosend = 1;
             pos_send = 0;
-            for(int i = 0; i < sizeof(sParameters) / sizeof(uint32_t); i++) {
-              if((msgs_bitmap[i >> 3] & (1 << (i & 7))) == 0) {
+            for(int i = 0; i < ITEMSOF(gParameters); i++) {
+              if(BIT_GET(gConfigBitmap, i) && !BIT_GET(msgs_bitmap, gParameters[i].offset / sizeof(uint32_t))) {
                 pos_send = i;
                 isoktosend = 0;
                 break;
@@ -537,13 +576,21 @@ void StartCanTask(void *argument)
             }
             if(isoktosend) {
               isoktosend = 0;
-              for(int i = 0; i < ITEMSOF(gParamsFifo); i++) {
-                if(gParamsFifo[i].buffer && gParamsFifo[i].info.capacity) {
-                  protPush(&gParamsFifo[i], &parameters);
+              for(int i = 0; i < sizeof(msgs_bitmap); i++) {
+                if(msgs_bitmap[i]) {
+                  isoktosend = 1;
+                  break;
                 }
               }
-              memset(msgs_bitmap, 0, sizeof(msgs_bitmap));
-              pos_send = 0;
+              if(isoktosend) {
+                for(int i = 0; i < ITEMSOF(gParamsFifo); i++) {
+                  if(gParamsFifo[i].buffer && gParamsFifo[i].info.capacity) {
+                    protPush(&gParamsFifo[i], &parameters);
+                  }
+                }
+                memset(msgs_bitmap, 0, sizeof(msgs_bitmap));
+                pos_send = 0;
+              }
             }
             need_send = 1;
           }
@@ -637,6 +684,11 @@ void StartKlineTask(void *argument)
 
 void tasksInit(void)
 {
+  memset(gConfigBitmap, 0, sizeof(gConfigBitmap));
+  for(int i = 0; i < ITEMSOF(gParameters); i++) {
+    BIT_SET(gConfigBitmap, i);
+  }
+
   h_task_time = osThreadNew(StartTimeTask, NULL, &attrs_task_time);
   h_task_usb = osThreadNew(StartUsbTask, NULL, &attrs_task_usb);
   h_task_sdio = osThreadNew(StartSdioTask, NULL, &attrs_task_sdio);
