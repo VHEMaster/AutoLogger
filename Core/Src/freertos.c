@@ -267,6 +267,7 @@ struct sLogDriver {
 static void driver_loop(struct sLogDriver *driver)
 {
   uint32_t readpos;
+  uint8_t need_write;
 
   led_set(driver->led, LedOff);
   led_set_post(driver->led, LedOff);
@@ -308,7 +309,7 @@ static void driver_loop(struct sLogDriver *driver)
               if(readpos > 0) {
                 driver->string[readpos] = '\0';
                 for(int j = 0; j < ITEMSOF(gParameters); j++) {
-                  if(!strnstr(gParameters[j].name, driver->string, strlen(gParameters[j].name))) {
+                  if(strnstr(gParameters[j].name, driver->string, strlen(gParameters[j].name))) {
                     BIT_SET(gConfigBitmap, j);
                     break;
                   }
@@ -318,6 +319,8 @@ static void driver_loop(struct sLogDriver *driver)
             } else {
               readpos++;
             }
+            if(f_eof(driver->file))
+              break;
           }
         }
         f_close(driver->file);
@@ -401,34 +404,35 @@ static void driver_loop(struct sLogDriver *driver)
     if(protPull(driver->fifo, &driver->parameters)) {
       driver->diff = gTick64 - driver->InitTime64;
       if(driver->diff > 0) {
-        sprintf(driver->string, "%s000,", UINT64_TO_STR(driver->diff));
+        sprintf(driver->string, "%s000", UINT64_TO_STR(driver->diff));
       } else {
-        strcpy(driver->string, "0,");
+        strcpy(driver->string, "0");
       }
       driver->fres = f_write(driver->file, driver->string, strlen(driver->string), &driver->wrote);
       if(driver->fres != FR_OK) { f_close(driver->file); driver->initialized = 0; continue; }
       for(int i = 0; i < ITEMSOF(gParameters);) {
+        driver->string[0] = '\0';
         if(BIT_GET(gConfigBitmap, i)) {
-          strcpy(driver->string, ",");
           const void *ptr = ((uint8_t *)&driver->parameters) + gParameters[i].offset;
           switch(gParameters[i].type) {
             case 1:
-              sprintf(driver->string, "%s,", (const char *)ptr);
+              sprintf(driver->string, ",%s", (const char *)ptr);
               break;
             case 2:
-              sprintf(driver->string, "%ld,", *(const int32_t *)ptr);
+              sprintf(driver->string, ",%ld", *(const int32_t *)ptr);
               break;
             case 3:
-              sprintf(driver->string, "%f,", *(const float *)ptr);
+              sprintf(driver->string, ",%f", *(const float *)ptr);
               break;
             default:
               break;
           }
+        }
 
-          if(++i >= ITEMSOF(gParameters)) {
-            driver->string[strlen(driver->string) - 1] = '\0';
-            strcat(driver->string, "\r\n");
-          }
+        if(++i >= ITEMSOF(gParameters)) {
+          strcat(driver->string, "\r\n");
+        }
+        if(driver->string[0]) {
           driver->fres = f_write(driver->file, driver->string, strlen(driver->string), &driver->wrote);
           if(driver->fres != FR_OK) { f_close(driver->file); driver->initialized = 0; continue; }
         }
@@ -569,7 +573,7 @@ void StartCanTask(void *argument)
             pos_send = 0;
             for(int i = 0; i < ITEMSOF(gParameters); i++) {
               if(BIT_GET(gConfigBitmap, i) && !BIT_GET(msgs_bitmap, gParameters[i].offset / sizeof(uint32_t))) {
-                pos_send = i;
+                pos_send = gParameters[i].offset / sizeof(uint32_t);
                 isoktosend = 0;
                 break;
               }
@@ -647,7 +651,7 @@ void StartCanTask(void *argument)
           free_level &= ~(1 << mailbox);
 
           if(!pinged) {
-            led_set(LedCan, LedShort);
+            //led_set(LedCan, LedShort);
           }
         }
       }
