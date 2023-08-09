@@ -113,8 +113,13 @@ const sParameter gParameters[] = {
     {"KnockZone",                 3, OFFSETOF(sParameters, KnockZone)},
     {"KnockAdvance",              3, OFFSETOF(sParameters, KnockAdvance)},
     {"KnockCount",                2, OFFSETOF(sParameters, KnockCount)},
+    {"KnockCountCy1",             2, OFFSETOF(sParameters, KnockCountCy[0])},
+    {"KnockCountCy2",             2, OFFSETOF(sParameters, KnockCountCy[1])},
+    {"KnockCountCy3",             2, OFFSETOF(sParameters, KnockCountCy[2])},
+    {"KnockCountCy4",             2, OFFSETOF(sParameters, KnockCountCy[3])},
     {"AirTemp",                   3, OFFSETOF(sParameters, AirTemp)},
     {"EngineTemp",                3, OFFSETOF(sParameters, EngineTemp)},
+    {"CalculatedAirTemp",         3, OFFSETOF(sParameters, CalculatedAirTemp)},
     {"ManifoldAirPressure",       3, OFFSETOF(sParameters, ManifoldAirPressure)},
     {"ThrottlePosition",          3, OFFSETOF(sParameters, ThrottlePosition)},
     {"ReferenceVoltage",          3, OFFSETOF(sParameters, ReferenceVoltage)},
@@ -137,8 +142,8 @@ const sParameter gParameters[] = {
     {"MassAirFlow",               3, OFFSETOF(sParameters, MassAirFlow)},
     {"CyclicAirFlow",             3, OFFSETOF(sParameters, CyclicAirFlow)},
     {"EffectiveVolume",           3, OFFSETOF(sParameters, EffectiveVolume)},
-    {"AirDestiny",                3, OFFSETOF(sParameters, AirDestiny)},
-    {"RelativeFilling",           3, OFFSETOF(sParameters, RelativeFilling)},
+    {"AirDensity",                3, OFFSETOF(sParameters, AirDensity)},
+    {"EngineLoad",                3, OFFSETOF(sParameters, EngineLoad)},
     {"WishFuelRatio",             3, OFFSETOF(sParameters, WishFuelRatio)},
     {"IdleValvePosition",         3, OFFSETOF(sParameters, IdleValvePosition)},
     {"IdleRegThrRPM",             3, OFFSETOF(sParameters, IdleRegThrRPM)},
@@ -155,6 +160,10 @@ const sParameter gParameters[] = {
     {"InjectionLag",              3, OFFSETOF(sParameters, InjectionLag)},
     {"IgnitionPulse",             3, OFFSETOF(sParameters, IgnitionPulse)},
     {"IdleSpeedShift",            3, OFFSETOF(sParameters, IdleSpeedShift)},
+    {"EnrichmentSyncAmount",      3, OFFSETOF(sParameters, EnrichmentSyncAmount)},
+    {"EnrichmentAsyncAmount",     3, OFFSETOF(sParameters, EnrichmentAsyncAmount)},
+    {"EnrichmentStartLoad",       3, OFFSETOF(sParameters, EnrichmentStartLoad)},
+    {"EnrichmentLoadDerivative",  3, OFFSETOF(sParameters, EnrichmentLoadDerivative)},
     {"DrivenKilometers",          3, OFFSETOF(sParameters, DrivenKilometers)},
     {"FuelConsumed",              3, OFFSETOF(sParameters, FuelConsumed)},
     {"FuelConsumption",           3, OFFSETOF(sParameters, FuelConsumption)},
@@ -176,7 +185,9 @@ const sParameter gParameters[] = {
     {"IgnOutput",                 2, OFFSETOF(sParameters, IgnOutput)},
     {"StartAllowed",              2, OFFSETOF(sParameters, StartAllowed)},
     {"IsRunning",                 2, OFFSETOF(sParameters, IsRunning)},
-    {"IsCheckEngine",             2, OFFSETOF(sParameters, IsCheckEngine)}
+    {"IsCheckEngine",             2, OFFSETOF(sParameters, IsCheckEngine)},
+    {"CylinderIgnitionBitmask",   2, OFFSETOF(sParameters, CylinderIgnitionBitmask)},
+    {"CylinderInjectionBitmask",  2, OFFSETOF(sParameters, CylinderInjectionBitmask)}
 
 };
 
@@ -187,7 +198,7 @@ static uint8_t gConfigBitmap[16] = {0};
 
 const char *gFileInitialHeader = "TimePoint";
 
-#define PARAMS_BUFFER_SIZE 52
+#define PARAMS_BUFFER_SIZE 48
 static sParameters gParamsBuffer[2][PARAMS_BUFFER_SIZE];
 static sProFIFO gParamsFifo[2];
 
