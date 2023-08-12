@@ -144,6 +144,8 @@ const sParameter gParameters[] = {
     {"EffectiveVolume",           3, OFFSETOF(sParameters, EffectiveVolume)},
     {"AirDensity",                3, OFFSETOF(sParameters, AirDensity)},
     {"EngineLoad",                3, OFFSETOF(sParameters, EngineLoad)},
+    {"EstimatedPower",            3, OFFSETOF(sParameters, EstimatedPower)},
+    {"EstimatedTorque",           3, OFFSETOF(sParameters, EstimatedTorque)},
     {"WishFuelRatio",             3, OFFSETOF(sParameters, WishFuelRatio)},
     {"IdleValvePosition",         3, OFFSETOF(sParameters, IdleValvePosition)},
     {"IdleRegThrRPM",             3, OFFSETOF(sParameters, IdleRegThrRPM)},
