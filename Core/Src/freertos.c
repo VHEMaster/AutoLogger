@@ -317,7 +317,7 @@ static void driver_loop(struct sLogDriver *driver)
               if(readpos > 0) {
                 driver->string[readpos] = '\0';
                 for(int j = 0; j < ITEMSOF(gParameters); j++) {
-                  if(strnstr(gParameters[j].name, driver->string, strlen(gParameters[j].name))) {
+                  if(strcmp(gParameters[j].name, driver->string) == 0) {
                     BIT_SET(gConfigBitmap, j);
                     break;
                   }
