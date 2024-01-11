@@ -92,12 +92,11 @@ typedef struct {
  * 1 = char *
  * 2 = int32_t
  * 3 = float
+ * 4 = uint8_t
+ * 5 = uint16_t
  */
 
 const sParameter gParameters[] = {
-    {"SwitchPosition",            2, OFFSETOF(sParameters, SwitchPosition)},
-    {"CurrentTable",              2, OFFSETOF(sParameters, CurrentTable)},
-    {"InjectorChannel",           2, OFFSETOF(sParameters, InjectorChannel)},
     {"AdcKnockVoltage",           3, OFFSETOF(sParameters, AdcKnockVoltage)},
     {"AdcAirTemp",                3, OFFSETOF(sParameters, AdcAirTemp)},
     {"AdcEngineTemp",             3, OFFSETOF(sParameters, AdcEngineTemp)},
@@ -107,22 +106,29 @@ const sParameter gParameters[] = {
     {"AdcReferenceVoltage",       3, OFFSETOF(sParameters, AdcReferenceVoltage)},
     {"AdcLambdaUR",               3, OFFSETOF(sParameters, AdcLambdaUR)},
     {"AdcLambdaUA",               3, OFFSETOF(sParameters, AdcLambdaUA)},
+    {"AdcEtcTps1",                3, OFFSETOF(sParameters, AdcEtcTps1)},
+    {"AdcEtcTps2",                3, OFFSETOF(sParameters, AdcEtcTps2)},
+    {"AdcEtcPedal1",              3, OFFSETOF(sParameters, AdcEtcPedal1)},
+    {"AdcEtcPedal2",              3, OFFSETOF(sParameters, AdcEtcPedal2)},
+    {"AdcEtcRsvd5",               3, OFFSETOF(sParameters, AdcEtcRsvd5)},
+    {"AdcEtcRsvd6",               3, OFFSETOF(sParameters, AdcEtcRsvd6)},
+    {"AdcEtcReferenceVoltage",    3, OFFSETOF(sParameters, AdcEtcReferenceVoltage)},
+    {"AdcEtcPowerVoltage",        3, OFFSETOF(sParameters, AdcEtcPowerVoltage)},
+    {"ThrottlePosition",          3, OFFSETOF(sParameters, ThrottlePosition)},
+    {"PedalPosition",             3, OFFSETOF(sParameters, PedalPosition)},
+    {"ThrottleDefaultPosition",   3, OFFSETOF(sParameters, ThrottleDefaultPosition)},
+    {"ThrottleTargetPosition",    3, OFFSETOF(sParameters, ThrottleTargetPosition)},
+    {"WishThrottleTargetPosition",3, OFFSETOF(sParameters, WishThrottleTargetPosition)},
     {"KnockSensor",               3, OFFSETOF(sParameters, KnockSensor)},
     {"KnockSensorFiltered",       3, OFFSETOF(sParameters, KnockSensorFiltered)},
     {"KnockSensorDetonate",       3, OFFSETOF(sParameters, KnockSensorDetonate)},
     {"KnockZone",                 3, OFFSETOF(sParameters, KnockZone)},
     {"KnockAdvance",              3, OFFSETOF(sParameters, KnockAdvance)},
     {"KnockSaturation",           3, OFFSETOF(sParameters, KnockSaturation)},
-    {"KnockCount",                2, OFFSETOF(sParameters, KnockCount)},
-    {"KnockCountCy1",             2, OFFSETOF(sParameters, KnockCountCy[0])},
-    {"KnockCountCy2",             2, OFFSETOF(sParameters, KnockCountCy[1])},
-    {"KnockCountCy3",             2, OFFSETOF(sParameters, KnockCountCy[2])},
-    {"KnockCountCy4",             2, OFFSETOF(sParameters, KnockCountCy[3])},
     {"AirTemp",                   3, OFFSETOF(sParameters, AirTemp)},
     {"EngineTemp",                3, OFFSETOF(sParameters, EngineTemp)},
     {"CalculatedAirTemp",         3, OFFSETOF(sParameters, CalculatedAirTemp)},
     {"ManifoldAirPressure",       3, OFFSETOF(sParameters, ManifoldAirPressure)},
-    {"ThrottlePosition",          3, OFFSETOF(sParameters, ThrottlePosition)},
     {"ReferenceVoltage",          3, OFFSETOF(sParameters, ReferenceVoltage)},
     {"PowerVoltage",              3, OFFSETOF(sParameters, PowerVoltage)},
     {"FuelRatio",                 3, OFFSETOF(sParameters, FuelRatio)},
@@ -133,9 +139,6 @@ const sParameter gParameters[] = {
     {"ShortTermCorrection",       3, OFFSETOF(sParameters, ShortTermCorrection)},
     {"LongTermCorrection",        3, OFFSETOF(sParameters, LongTermCorrection)},
     {"IdleCorrection",            3, OFFSETOF(sParameters, IdleCorrection)},
-    {"IdleFlag",                  2, OFFSETOF(sParameters, IdleFlag)},
-    {"IdleCorrFlag",              2, OFFSETOF(sParameters, IdleCorrFlag)},
-    {"IdleEconFlag",              2, OFFSETOF(sParameters, IdleEconFlag)},
     {"RPM",                       3, OFFSETOF(sParameters, RPM)},
     {"Speed",                     3, OFFSETOF(sParameters, Speed)},
     {"MassAirFlow",               3, OFFSETOF(sParameters, MassAirFlow)},
@@ -170,24 +173,51 @@ const sParameter gParameters[] = {
     {"FuelHourly",                3, OFFSETOF(sParameters, FuelHourly)},
     {"TspsRelativePosition",      3, OFFSETOF(sParameters, TspsRelativePosition)},
     {"IdleWishToRpmRelation",     3, OFFSETOF(sParameters, IdleWishToRpmRelation)},
-    {"LambdaValid",               2, OFFSETOF(sParameters, LambdaValid)},
-    {"OilSensor",                 2, OFFSETOF(sParameters, OilSensor)},
-    {"FanForceSwitch",            2, OFFSETOF(sParameters, FanForceSwitch)},
-    {"HandbrakeSensor",           2, OFFSETOF(sParameters, HandbrakeSensor)},
-    {"ChargeSensor",              2, OFFSETOF(sParameters, ChargeSensor)},
-    {"ClutchSensor",              2, OFFSETOF(sParameters, ClutchSensor)},
-    {"IgnSensor",                 2, OFFSETOF(sParameters, IgnSensor)},
-    {"FuelPumpRelay",             2, OFFSETOF(sParameters, FuelPumpRelay)},
-    {"FanRelay",                  2, OFFSETOF(sParameters, FanRelay)},
-    {"CheckEngine",               2, OFFSETOF(sParameters, CheckEngine)},
-    {"StarterRelay",              2, OFFSETOF(sParameters, StarterRelay)},
-    {"FanSwitch",                 2, OFFSETOF(sParameters, FanSwitch)},
-    {"IgnOutput",                 2, OFFSETOF(sParameters, IgnOutput)},
-    {"StartAllowed",              2, OFFSETOF(sParameters, StartAllowed)},
-    {"IsRunning",                 2, OFFSETOF(sParameters, IsRunning)},
-    {"IsCheckEngine",             2, OFFSETOF(sParameters, IsCheckEngine)},
-    {"CylinderIgnitionBitmask",   2, OFFSETOF(sParameters, CylinderIgnitionBitmask)},
-    {"CylinderInjectionBitmask",  2, OFFSETOF(sParameters, CylinderInjectionBitmask)}
+    {"KnockCount",                5, OFFSETOF(sParameters, KnockCount)},
+    {"KnockCountCy1",             5, OFFSETOF(sParameters, KnockCountCy[0])},
+    {"KnockCountCy2",             5, OFFSETOF(sParameters, KnockCountCy[1])},
+    {"KnockCountCy3",             5, OFFSETOF(sParameters, KnockCountCy[2])},
+    {"KnockCountCy4",             5, OFFSETOF(sParameters, KnockCountCy[3])},
+    {"SwitchPosition",            4, OFFSETOF(sParameters, SwitchPosition)},
+    {"CurrentTable",              4, OFFSETOF(sParameters, CurrentTable)},
+    {"InjectorChannel",           4, OFFSETOF(sParameters, InjectorChannel)},
+    {"IdleFlag",                  4, OFFSETOF(sParameters, IdleFlag)},
+    {"IdleCorrFlag",              4, OFFSETOF(sParameters, IdleCorrFlag)},
+    {"IdleEconFlag",              4, OFFSETOF(sParameters, IdleEconFlag)},
+    {"LambdaValid",               4, OFFSETOF(sParameters, LambdaValid)},
+    {"OilSensor",                 4, OFFSETOF(sParameters, OilSensor)},
+    {"FanForceSwitch",            4, OFFSETOF(sParameters, FanForceSwitch)},
+    {"HandbrakeSensor",           4, OFFSETOF(sParameters, HandbrakeSensor)},
+    {"ChargeSensor",              4, OFFSETOF(sParameters, ChargeSensor)},
+    {"ClutchSensor",              4, OFFSETOF(sParameters, ClutchSensor)},
+    {"IgnSensor",                 4, OFFSETOF(sParameters, IgnSensor)},
+    {"FuelPumpRelay",             4, OFFSETOF(sParameters, FuelPumpRelay)},
+    {"FanRelay",                  4, OFFSETOF(sParameters, FanRelay)},
+    {"CheckEngine",               4, OFFSETOF(sParameters, CheckEngine)},
+    {"StarterRelay",              4, OFFSETOF(sParameters, StarterRelay)},
+    {"FanSwitch",                 4, OFFSETOF(sParameters, FanSwitch)},
+    {"IgnOutput",                 4, OFFSETOF(sParameters, IgnOutput)},
+    {"StartAllowed",              4, OFFSETOF(sParameters, StartAllowed)},
+    {"IsRunning",                 4, OFFSETOF(sParameters, IsRunning)},
+    {"IsCheckEngine",             4, OFFSETOF(sParameters, IsCheckEngine)},
+
+    {"EtcMotorActiveFlag",        4, OFFSETOF(sParameters, EtcMotorActiveFlag)},
+    {"EtcStandaloneFlag",         4, OFFSETOF(sParameters, EtcStandaloneFlag)},
+    {"EtcMotorFullCloseFlag",     4, OFFSETOF(sParameters, EtcMotorFullCloseFlag)},
+
+    {"EtcOutCruizeG",             4, OFFSETOF(sParameters, EtcOutCruizeG)},
+    {"EtcOutCruizeR",             4, OFFSETOF(sParameters, EtcOutCruizeR)},
+    {"EtcOutRsvd3",               4, OFFSETOF(sParameters, EtcOutRsvd3)},
+    {"EtcOutRsvd4",               4, OFFSETOF(sParameters, EtcOutRsvd4)},
+    {"EtcInCruizeStart",          4, OFFSETOF(sParameters, EtcInCruizeStart)},
+    {"EtcInCruizeStop",           4, OFFSETOF(sParameters, EtcInCruizeStop)},
+    {"EtcInBrake",                4, OFFSETOF(sParameters, EtcInBrake)},
+    {"EtcInRsvd4",                4, OFFSETOF(sParameters, EtcInRsvd4)},
+    {"EtcInRsvd5",                4, OFFSETOF(sParameters, EtcInRsvd5)},
+    {"EtcInRsvd6",                4, OFFSETOF(sParameters, EtcInRsvd6)},
+
+    {"CylinderIgnitionBitmask",   4, OFFSETOF(sParameters, CylinderIgnitionBitmask)},
+    {"CylinderInjectionBitmask",  4, OFFSETOF(sParameters, CylinderInjectionBitmask)}
 
 };
 
@@ -429,6 +459,12 @@ static void driver_loop(struct sLogDriver *driver)
               break;
             case 3:
               sprintf(driver->string, ",%f", *(const float *)ptr);
+              break;
+            case 4:
+              sprintf(driver->string, ",%hhu", *(const uint8_t *)ptr);
+              break;
+            case 5:
+              sprintf(driver->string, ",%hu", *(const uint16_t *)ptr);
               break;
             default:
               break;

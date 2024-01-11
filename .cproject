@@ -116,8 +116,9 @@
 					<fileInfo id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.2017467923.1374541211" name="packets.h" rcbsApplicability="disable" resourcePath="Common/packets.h" toolsToInvoke=""/>
 					<fileInfo id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.2017467923.1185875361" name="failures.h" rcbsApplicability="disable" resourcePath="Common/failures.h" toolsToInvoke=""/>
 					<fileInfo id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.2017467923.531302157" name="defines.h" rcbsApplicability="disable" resourcePath="Common/defines.h" toolsToInvoke=""/>
+					<fileInfo id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.2017467923.886417157" name="can_signals_db.h" rcbsApplicability="disable" resourcePath="Common/can_signals_db.h" toolsToInvoke=""/>
 					<sourceEntries>
-						<entry excluding="packets.c|packets.h|failures.c|failures.h" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Common"/>
+						<entry excluding="can_signals_db.h|can_signals_db.c|packets.c|packets.h|failures.c|failures.h" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Common"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="FATFS"/>
@@ -243,8 +244,9 @@
 					<fileInfo id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.480519559.1917581813" name="packets.h" rcbsApplicability="disable" resourcePath="Common/packets.h" toolsToInvoke=""/>
 					<fileInfo id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.480519559.702636203" name="failures.h" rcbsApplicability="disable" resourcePath="Common/failures.h" toolsToInvoke=""/>
 					<fileInfo id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.480519559.51442151" name="defines.h" rcbsApplicability="disable" resourcePath="Common/defines.h" toolsToInvoke=""/>
+					<fileInfo id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.480519559.1439397993" name="can_signals_db.h" rcbsApplicability="disable" resourcePath="Common/can_signals_db.h" toolsToInvoke=""/>
 					<sourceEntries>
-						<entry excluding="packets.c|packets.h|failures.h" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Common"/>
+						<entry excluding="can_signals_db.h|can_signals_db.c|packets.c|packets.h|failures.h" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Common"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="FATFS"/>
