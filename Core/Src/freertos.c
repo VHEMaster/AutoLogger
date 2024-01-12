@@ -25,29 +25,14 @@
 #include "xProFIFO.h"
 #include "led.h"
 #include "structs.h"
+#include "can.h"
+#include "can_signals.h"
+#include "can_signals_db.h"
 #include <stdio.h>
 #include <string.h>
 
 #define CAN_LOOPBACK() HAL_GPIO_WritePin(CAN1_LBK_GPIO_Port, CAN1_LBK_Pin, GPIO_PIN_SET)
 #define CAN_NORMAL() HAL_GPIO_WritePin(CAN1_LBK_GPIO_Port, CAN1_LBK_Pin, GPIO_PIN_RESET)
-
-typedef struct {
-    union {
-        uint8_t bytes[8];
-        uint16_t words[4];
-        uint32_t dwords[2];
-        uint64_t qword;
-    } data;
-    uint32_t rtr;
-    uint16_t id;
-    uint8_t length;
-    uint8_t pad;
-}sCanMessage __attribute__((aligned(8)));
-
-#define CAN_RX_BUFFER_COUNT (16)
-
-static sProFIFO canrxfifo;
-static sCanMessage canrxbuffer[CAN_RX_BUFFER_COUNT];
 
 
 extern CAN_HandleTypeDef hcan1;
@@ -102,7 +87,6 @@ const sParameter gParameters[] = {
     {"AdcEngineTemp",             3, OFFSETOF(sParameters, AdcEngineTemp)},
     {"AdcManifoldAirPressure",    3, OFFSETOF(sParameters, AdcManifoldAirPressure)},
     {"AdcThrottlePosition",       3, OFFSETOF(sParameters, AdcThrottlePosition)},
-    {"AdcPowerVoltage",           3, OFFSETOF(sParameters, AdcPowerVoltage)},
     {"AdcReferenceVoltage",       3, OFFSETOF(sParameters, AdcReferenceVoltage)},
     {"AdcLambdaUR",               3, OFFSETOF(sParameters, AdcLambdaUR)},
     {"AdcLambdaUA",               3, OFFSETOF(sParameters, AdcLambdaUA)},
@@ -228,8 +212,13 @@ static uint8_t gConfigBitmap[16] = {0};
 
 const char *gFileInitialHeader = "TimePoint";
 
-#define PARAMS_BUFFER_SIZE 48
-static sParameters gParamsBuffer[2][PARAMS_BUFFER_SIZE];
+typedef struct {
+    uint64_t timestamp;
+    sParameters params;
+}sLoggerParameters;
+
+#define PARAMS_BUFFER_SIZE 40
+static sLoggerParameters gParamsBuffer[2][PARAMS_BUFFER_SIZE];
 static sProFIFO gParamsFifo[2];
 
 const osThreadAttr_t attrs_task_time = {
@@ -289,7 +278,7 @@ struct sLogDriver {
     uint16_t filenumber;
     UINT read;
     UINT wrote;
-    sParameters parameters;
+    sLoggerParameters parameters;
     uint64_t InitTime64;
     uint64_t diff;
     uint64_t sync_last;
@@ -438,7 +427,10 @@ static void driver_loop(struct sLogDriver *driver)
     }
 
     if(protPull(driver->fifo, &driver->parameters)) {
-      driver->diff = gTick64 - driver->InitTime64;
+      if(driver->parameters.timestamp < driver->InitTime64) {
+        driver->InitTime64 = driver->parameters.timestamp;
+      }
+      driver->diff = driver->parameters.timestamp - driver->InitTime64;
       if(driver->diff > 0) {
         sprintf(driver->string, "%s000", UINT64_TO_STR(driver->diff));
       } else {
@@ -449,7 +441,7 @@ static void driver_loop(struct sLogDriver *driver)
       for(int i = 0; i < ITEMSOF(gParameters);) {
         driver->string[0] = '\0';
         if(BIT_GET(gConfigBitmap, i)) {
-          const void *ptr = ((uint8_t *)&driver->parameters) + gParameters[i].offset;
+          const void *ptr = ((uint8_t *)&driver->parameters.params) + gParameters[i].offset;
           switch(gParameters[i].type) {
             case 1:
               sprintf(driver->string, ",%s", (const char *)ptr);
@@ -461,7 +453,7 @@ static void driver_loop(struct sLogDriver *driver)
               sprintf(driver->string, ",%f", *(const float *)ptr);
               break;
             case 4:
-              sprintf(driver->string, ",%hhu", *(const uint8_t *)ptr);
+              sprintf(driver->string, ",%hu", *(const uint8_t *)ptr);
               break;
             case 5:
               sprintf(driver->string, ",%hu", *(const uint16_t *)ptr);
@@ -480,17 +472,169 @@ static void driver_loop(struct sLogDriver *driver)
         }
       }
 
-      if(gTick64 - driver->sync_last > 200) {
+      if(gTick64 - driver->sync_last > 1000) {
         driver->fres = f_sync(driver->file);
         if(driver->fres != FR_OK) { f_close(driver->file); driver->initialized = 0; continue; }
+        driver->sync_last = gTick64;
       }
 
       led_set(driver->led, LedShortSingle);
     } else {
-      osDelay(5);
+      osDelay(1);
     }
 
   }
+}
+
+static int8_t ecu_can_process_message(const sCanRawMessage *message, sLoggerParameters *logger_parameters)
+{
+  const uint32_t messages_count = 10;
+  const uint32_t msgs_expected = (1 << messages_count) - 1;
+  static uint32_t msgs_bitmap = 0;
+  sParameters *parameters = &logger_parameters->params;
+
+  int8_t status = 0;
+
+  sCanMessage * can_msg = can_message_get_msg(message);
+
+  if(can_msg != NULL) {
+    switch(can_msg->Id) {
+      case 0x020:
+        can_signal_get_float(&g_can_message_id020_ECU, &g_can_signal_id020_ECU_AdcKnockVoltage, &parameters->AdcKnockVoltage);
+        can_signal_get_float(&g_can_message_id020_ECU, &g_can_signal_id020_ECU_AdcAirTemp, &parameters->AdcAirTemp);
+        can_signal_get_float(&g_can_message_id020_ECU, &g_can_signal_id020_ECU_AdcEngineTemp, &parameters->AdcEngineTemp);
+        can_signal_get_float(&g_can_message_id020_ECU, &g_can_signal_id020_ECU_AdcManifoldAirPressure, &parameters->AdcManifoldAirPressure);
+        can_signal_get_float(&g_can_message_id020_ECU, &g_can_signal_id020_ECU_AdcThrottlePosition, &parameters->AdcThrottlePosition);
+        can_signal_get_float(&g_can_message_id020_ECU, &g_can_signal_id020_ECU_AdcReferenceVoltage, &parameters->AdcReferenceVoltage);
+        can_signal_get_float(&g_can_message_id020_ECU, &g_can_signal_id020_ECU_AdcLambdaUR, &parameters->AdcLambdaUR);
+        can_signal_get_float(&g_can_message_id020_ECU, &g_can_signal_id020_ECU_AdcLambdaUA, &parameters->AdcLambdaUA);
+        msgs_bitmap |= 1 << (can_msg->Id - 0x020);
+        break;
+      case 0x021:
+        can_signal_get_float(&g_can_message_id021_ECU, &g_can_signal_id021_ECU_KnockSensor, &parameters->KnockSensor);
+        can_signal_get_float(&g_can_message_id021_ECU, &g_can_signal_id021_ECU_KnockSensorFiltered, &parameters->KnockSensorFiltered);
+        can_signal_get_float(&g_can_message_id021_ECU, &g_can_signal_id021_ECU_KnockSensorDetonate, &parameters->KnockSensorDetonate);
+        can_signal_get_float(&g_can_message_id021_ECU, &g_can_signal_id021_ECU_KnockSaturation, &parameters->KnockSaturation);
+        can_signal_get_float(&g_can_message_id021_ECU, &g_can_signal_id021_ECU_KnockAdvance, &parameters->KnockAdvance);
+        can_signal_get_uint16(&g_can_message_id021_ECU, &g_can_signal_id021_ECU_KnockCountCy1, &parameters->KnockCountCy[0]);
+        can_signal_get_uint16(&g_can_message_id021_ECU, &g_can_signal_id021_ECU_KnockCountCy2, &parameters->KnockCountCy[1]);
+        can_signal_get_uint16(&g_can_message_id021_ECU, &g_can_signal_id021_ECU_KnockCountCy3, &parameters->KnockCountCy[2]);
+        can_signal_get_uint16(&g_can_message_id021_ECU, &g_can_signal_id021_ECU_KnockCountCy4, &parameters->KnockCountCy[3]);
+        can_signal_get_uint16(&g_can_message_id021_ECU, &g_can_signal_id021_ECU_KnockCount, &parameters->KnockCount);
+        msgs_bitmap |= 1 << (can_msg->Id - 0x020);
+        break;
+      case 0x022:
+        can_signal_get_float(&g_can_message_id022_ECU, &g_can_signal_id022_ECU_AirTemp, &parameters->AirTemp);
+        can_signal_get_float(&g_can_message_id022_ECU, &g_can_signal_id022_ECU_EngineTemp, &parameters->EngineTemp);
+        can_signal_get_float(&g_can_message_id022_ECU, &g_can_signal_id022_ECU_CalculatedAirTemp, &parameters->CalculatedAirTemp);
+        can_signal_get_float(&g_can_message_id022_ECU, &g_can_signal_id022_ECU_ManifoldAirPressure, &parameters->ManifoldAirPressure);
+        can_signal_get_float(&g_can_message_id022_ECU, &g_can_signal_id022_ECU_ThrottlePosition, &parameters->ThrottlePosition);
+        can_signal_get_float(&g_can_message_id022_ECU, &g_can_signal_id022_ECU_RPM, &parameters->RPM);
+        msgs_bitmap |= 1 << (can_msg->Id - 0x020);
+        break;
+      case 0x023:
+        can_signal_get_float(&g_can_message_id023_ECU, &g_can_signal_id023_ECU_FuelRatio, &parameters->FuelRatio);
+        can_signal_get_float(&g_can_message_id023_ECU, &g_can_signal_id023_ECU_FuelRatioDiff, &parameters->FuelRatioDiff);
+        can_signal_get_float(&g_can_message_id023_ECU, &g_can_signal_id023_ECU_LambdaValue, &parameters->LambdaValue);
+        can_signal_get_float(&g_can_message_id023_ECU, &g_can_signal_id023_ECU_LambdaTemperature, &parameters->LambdaTemperature);
+        can_signal_get_float(&g_can_message_id023_ECU, &g_can_signal_id023_ECU_LambdaHeaterVoltage, &parameters->LambdaHeaterVoltage);
+        can_signal_get_float(&g_can_message_id023_ECU, &g_can_signal_id023_ECU_ShortTermCorrection, &parameters->ShortTermCorrection);
+        can_signal_get_float(&g_can_message_id023_ECU, &g_can_signal_id023_ECU_LongTermCorrection, &parameters->LongTermCorrection);
+        can_signal_get_float(&g_can_message_id023_ECU, &g_can_signal_id023_ECU_IdleCorrection, &parameters->IdleCorrection);
+        msgs_bitmap |= 1 << (can_msg->Id - 0x020);
+        break;
+      case 0x024:
+        can_signal_get_float(&g_can_message_id024_ECU, &g_can_signal_id024_ECU_Speed, &parameters->Speed);
+        can_signal_get_float(&g_can_message_id024_ECU, &g_can_signal_id024_ECU_MassAirFlow, &parameters->MassAirFlow);
+        can_signal_get_float(&g_can_message_id024_ECU, &g_can_signal_id024_ECU_CyclicAirFlow, &parameters->CyclicAirFlow);
+        can_signal_get_float(&g_can_message_id024_ECU, &g_can_signal_id024_ECU_EffectiveVolume, &parameters->EffectiveVolume);
+        can_signal_get_float(&g_can_message_id024_ECU, &g_can_signal_id024_ECU_EngineLoad, &parameters->EngineLoad);
+        can_signal_get_float(&g_can_message_id024_ECU, &g_can_signal_id024_ECU_EstimatedPower, &parameters->EstimatedPower);
+        can_signal_get_float(&g_can_message_id024_ECU, &g_can_signal_id024_ECU_EstimatedTorque, &parameters->EstimatedTorque);
+        msgs_bitmap |= 1 << (can_msg->Id - 0x020);
+        break;
+      case 0x025:
+        can_signal_get_float(&g_can_message_id025_ECU, &g_can_signal_id025_ECU_WishFuelRatio, &parameters->WishFuelRatio);
+        can_signal_get_float(&g_can_message_id025_ECU, &g_can_signal_id025_ECU_IdleValvePosition, &parameters->IdleValvePosition);
+        can_signal_get_float(&g_can_message_id025_ECU, &g_can_signal_id025_ECU_IdleRegThrRPM, &parameters->IdleRegThrRPM);
+        can_signal_get_float(&g_can_message_id025_ECU, &g_can_signal_id025_ECU_WishIdleRPM, &parameters->WishIdleRPM);
+        can_signal_get_float(&g_can_message_id025_ECU, &g_can_signal_id025_ECU_WishIdleMassAirFlow, &parameters->WishIdleMassAirFlow);
+        can_signal_get_float(&g_can_message_id025_ECU, &g_can_signal_id025_ECU_WishIdleValvePosition, &parameters->WishIdleValvePosition);
+        can_signal_get_float(&g_can_message_id025_ECU, &g_can_signal_id025_ECU_WishIdleIgnitionAdvance, &parameters->WishIdleIgnitionAdvance);
+        can_signal_get_float(&g_can_message_id025_ECU, &g_can_signal_id025_ECU_IdleSpeedShift, &parameters->IdleSpeedShift);
+        msgs_bitmap |= 1 << (can_msg->Id - 0x020);
+        break;
+      case 0x026:
+        can_signal_get_float(&g_can_message_id026_ECU, &g_can_signal_id026_ECU_InjectionPhase, &parameters->InjectionPhase);
+        can_signal_get_float(&g_can_message_id026_ECU, &g_can_signal_id026_ECU_InjectionPhaseDuration, &parameters->InjectionPhaseDuration);
+        can_signal_get_float(&g_can_message_id026_ECU, &g_can_signal_id026_ECU_InjectionPulse, &parameters->InjectionPulse);
+        can_signal_get_float(&g_can_message_id026_ECU, &g_can_signal_id026_ECU_InjectionDutyCycle, &parameters->InjectionDutyCycle);
+        can_signal_get_float(&g_can_message_id026_ECU, &g_can_signal_id026_ECU_IgnitionPulse, &parameters->IgnitionPulse);
+        can_signal_get_float(&g_can_message_id026_ECU, &g_can_signal_id026_ECU_InjectionLag, &parameters->InjectionLag);
+        can_signal_get_float(&g_can_message_id026_ECU, &g_can_signal_id026_ECU_TspsRelativePosition, &parameters->TspsRelativePosition);
+        can_signal_get_float(&g_can_message_id026_ECU, &g_can_signal_id026_ECU_IgnitionAdvance, &parameters->IgnitionAdvance);
+        msgs_bitmap |= 1 << (can_msg->Id - 0x020);
+        break;
+      case 0x027:
+        can_signal_get_float(&g_can_message_id027_ECU, &g_can_signal_id027_ECU_EnrichmentSyncAmount, &parameters->EnrichmentSyncAmount);
+        can_signal_get_float(&g_can_message_id027_ECU, &g_can_signal_id027_ECU_EnrichmentAsyncAmount, &parameters->EnrichmentAsyncAmount);
+        can_signal_get_float(&g_can_message_id027_ECU, &g_can_signal_id027_ECU_EnrichmentStartLoad, &parameters->EnrichmentStartLoad);
+        can_signal_get_float(&g_can_message_id027_ECU, &g_can_signal_id027_ECU_EnrichmentLoadDerivative, &parameters->EnrichmentLoadDerivative);
+        can_signal_get_float(&g_can_message_id027_ECU, &g_can_signal_id027_ECU_InjectionEnrichment, &parameters->InjectionEnrichment);
+        can_signal_get_float(&g_can_message_id027_ECU, &g_can_signal_id027_ECU_IdleWishToRpmRelation, &parameters->IdleWishToRpmRelation);
+        msgs_bitmap |= 1 << (can_msg->Id - 0x020);
+        break;
+      case 0x028:
+        can_signal_get_float(&g_can_message_id028_ECU, &g_can_signal_id028_ECU_DrivenKilometers, &parameters->DrivenKilometers);
+        can_signal_get_float(&g_can_message_id028_ECU, &g_can_signal_id028_ECU_FuelConsumption, &parameters->FuelConsumption);
+        can_signal_get_float(&g_can_message_id028_ECU, &g_can_signal_id028_ECU_FuelConsumed, &parameters->FuelConsumed);
+        can_signal_get_float(&g_can_message_id028_ECU, &g_can_signal_id028_ECU_FuelHourly, &parameters->FuelHourly);
+        msgs_bitmap |= 1 << (can_msg->Id - 0x020);
+        break;
+      case 0x029:
+        can_signal_get_uint8(&g_can_message_id029_ECU, &g_can_signal_id029_ECU_LambdaValid, &parameters->LambdaValid);
+        can_signal_get_uint8(&g_can_message_id029_ECU, &g_can_signal_id029_ECU_OilSensor, &parameters->OilSensor);
+        can_signal_get_uint8(&g_can_message_id029_ECU, &g_can_signal_id029_ECU_FanForceSwitch, &parameters->FanForceSwitch);
+        can_signal_get_uint8(&g_can_message_id029_ECU, &g_can_signal_id029_ECU_HandbrakeSensor, &parameters->HandbrakeSensor);
+        can_signal_get_uint8(&g_can_message_id029_ECU, &g_can_signal_id029_ECU_ChargeSensor, &parameters->ChargeSensor);
+        can_signal_get_uint8(&g_can_message_id029_ECU, &g_can_signal_id029_ECU_ClutchSensor, &parameters->ClutchSensor);
+        can_signal_get_uint8(&g_can_message_id029_ECU, &g_can_signal_id029_ECU_IgnSensor, &parameters->IgnSensor);
+        can_signal_get_uint8(&g_can_message_id029_ECU, &g_can_signal_id029_ECU_FuelPumpRelay, &parameters->FuelPumpRelay);
+        can_signal_get_uint8(&g_can_message_id029_ECU, &g_can_signal_id029_ECU_FanRelay, &parameters->FanRelay);
+        can_signal_get_uint8(&g_can_message_id029_ECU, &g_can_signal_id029_ECU_CheckEngine, &parameters->CheckEngine);
+        can_signal_get_uint8(&g_can_message_id029_ECU, &g_can_signal_id029_ECU_StarterRelay, &parameters->StarterRelay);
+        can_signal_get_uint8(&g_can_message_id029_ECU, &g_can_signal_id029_ECU_FanSwitch, &parameters->FanSwitch);
+        can_signal_get_uint8(&g_can_message_id029_ECU, &g_can_signal_id029_ECU_IgnOutput, &parameters->IgnOutput);
+        can_signal_get_uint8(&g_can_message_id029_ECU, &g_can_signal_id029_ECU_StartAllowed, &parameters->StartAllowed);
+        can_signal_get_uint8(&g_can_message_id029_ECU, &g_can_signal_id029_ECU_IsRunning, &parameters->IsRunning);
+        can_signal_get_uint8(&g_can_message_id029_ECU, &g_can_signal_id029_ECU_IsCheckEngine, &parameters->IsCheckEngine);
+        can_signal_get_uint8(&g_can_message_id029_ECU, &g_can_signal_id029_ECU_CylinderIgnitionBitmask, &parameters->CylinderIgnitionBitmask);
+        can_signal_get_uint8(&g_can_message_id029_ECU, &g_can_signal_id029_ECU_CylinderInjectionBitmask, &parameters->CylinderInjectionBitmask);
+        can_signal_get_float(&g_can_message_id029_ECU, &g_can_signal_id029_ECU_PowerVoltage, &parameters->PowerVoltage);
+        can_signal_get_uint8(&g_can_message_id029_ECU, &g_can_signal_id029_ECU_IdleFlag, &parameters->IdleFlag);
+        can_signal_get_uint8(&g_can_message_id029_ECU, &g_can_signal_id029_ECU_IdleCorrFlag, &parameters->IdleCorrFlag);
+        can_signal_get_uint8(&g_can_message_id029_ECU, &g_can_signal_id029_ECU_IdleEconFlag, &parameters->IdleEconFlag);
+        can_signal_get_uint8(&g_can_message_id029_ECU, &g_can_signal_id029_ECU_SwitchPosition, &parameters->SwitchPosition);
+        can_signal_get_uint8(&g_can_message_id029_ECU, &g_can_signal_id029_ECU_CurrentTable, &parameters->CurrentTable);
+        can_signal_get_uint8(&g_can_message_id029_ECU, &g_can_signal_id029_ECU_InjectorChannel, &parameters->InjectorChannel);
+        msgs_bitmap |= 1 << (can_msg->Id - 0x020);
+        break;
+      default:
+        break;
+    }
+
+    if(msgs_bitmap >= msgs_expected) {
+      led_set(LedCan, LedShort);
+      logger_parameters->timestamp = gTick64;
+      for(int i = 0; i < ITEMSOF(gParamsFifo); i++) {
+        if(gParamsFifo[i].buffer && gParamsFifo[i].info.capacity) {
+          protPush(&gParamsFifo[i], logger_parameters);
+        }
+      }
+      msgs_bitmap = 0;
+    }
+  }
+  return status;
 }
 
 void StartUsbTask(void *argument)
@@ -504,7 +648,7 @@ void StartUsbTask(void *argument)
   driver.file = &USBHFile;
   driver.path = USBHPath;
   driver.led = LedUsb;
-  protInit(driver.fifo, gParamsBuffer[0], sizeof(sParameters), PARAMS_BUFFER_SIZE);
+  protInit(driver.fifo, gParamsBuffer[1], sizeof(sLoggerParameters), PARAMS_BUFFER_SIZE);
 
   driver_loop(&driver);
 }
@@ -518,204 +662,59 @@ void StartSdioTask(void *argument)
   driver.file = &SDFile;
   driver.path = SDPath;
   driver.led = LedSdio;
-  protInit(driver.fifo, gParamsBuffer[1], sizeof(sParameters), PARAMS_BUFFER_SIZE);
+  protInit(driver.fifo, gParamsBuffer[0], sizeof(sLoggerParameters), PARAMS_BUFFER_SIZE);
 
   driver_loop(&driver);
 }
 
-void can_rxfifopendingcallback(CAN_HandleTypeDef *_hcan, uint32_t fifo)
-{
-  CAN_RxHeaderTypeDef header;
-  sCanMessage message = {0};
-  HAL_StatusTypeDef status;
-
-  if(_hcan == &hcan1) {
-    status = HAL_CAN_GetRxMessage(_hcan, fifo, &header, message.data.bytes);
-    if(status == HAL_OK) {
-      message.id = header.StdId;
-      message.length = header.DLC;
-      message.rtr = header.RTR;
-      protPush(&canrxfifo, &message);
-    }
-  }
-}
-
 void StartCanTask(void *argument)
 {
-  CAN_TxHeaderTypeDef header;
-  sCanMessage message;
-  HAL_StatusTypeDef status;
-  CAN_FilterTypeDef can_filter;
-  uint32_t free_level;
-  uint32_t mailbox;
-  uint8_t need_send = 0;
-  uint64_t last_send = 0;
-  uint64_t last_iwdg = 0;
-  uint64_t diff = 0;
-  sParameters parameters = {0};
-  uint32_t *params_ptr = (uint32_t *)&parameters;
-  uint8_t msgs_bitmap[16];
-  uint8_t isoktosend = 0;
-  uint32_t pos_send = 0;
-  uint8_t pinged = 0;
+  uint64_t now, last;
+  sLoggerParameters parameters = {0};
+  static sCanRawMessage message = {0};
+  int8_t status;
 
-  uint16_t filter_id = 0x200;
-  uint16_t filter_mask = 0x7F0;
+  can_init(&hcan1);
 
-  memset(msgs_bitmap, 0, sizeof(msgs_bitmap));
-
-  CAN_LOOPBACK();
+  const uint16_t filter_ids[] = { 0x020, 0x028 };
+  const uint16_t filter_masks[] = { 0x7F8, 0x7F8 };
+  can_start(filter_ids, filter_masks, ITEMSOF(filter_ids));
 
   led_set(LedCan, LedOn);
   led_set_post(LedCan, LedOn);
 
-  protInit(&canrxfifo, canrxbuffer, sizeof(canrxbuffer[0]), ITEMSOF(canrxbuffer));
+  can_message_register_msg(&g_can_message_id020_ECU);
+  can_message_register_msg(&g_can_message_id021_ECU);
+  can_message_register_msg(&g_can_message_id022_ECU);
+  can_message_register_msg(&g_can_message_id023_ECU);
+  can_message_register_msg(&g_can_message_id024_ECU);
+  can_message_register_msg(&g_can_message_id025_ECU);
+  can_message_register_msg(&g_can_message_id026_ECU);
+  can_message_register_msg(&g_can_message_id027_ECU);
+  can_message_register_msg(&g_can_message_id028_ECU);
+  can_message_register_msg(&g_can_message_id029_ECU);
 
-  can_filter.FilterActivation = CAN_FILTER_ENABLE;
-  can_filter.FilterBank = 0;
-  can_filter.FilterFIFOAssignment = CAN_RX_FIFO0;
-  can_filter.FilterIdHigh = filter_id<<5;
-  can_filter.FilterIdLow = 0;
-  can_filter.FilterMaskIdHigh = filter_mask<<5;
-  can_filter.FilterMaskIdLow = 0;
-  can_filter.FilterMode = CAN_FILTERMODE_IDMASK;
-  can_filter.FilterScale = CAN_FILTERSCALE_32BIT;
-  can_filter.SlaveStartFilterBank = 14;
-
-  status = HAL_CAN_ConfigFilter(&hcan1, &can_filter);
-  if(status != HAL_OK)
-    goto can_error;
-
-  status = HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_RX_FIFO1_MSG_PENDING);
-  if(status != HAL_OK)
-    goto can_error;
-
-  status = HAL_CAN_ActivateNotification(&hcan1, CAN_IT_ERROR_WARNING | CAN_IT_ERROR_PASSIVE | CAN_IT_BUSOFF | CAN_IT_LAST_ERROR_CODE | CAN_IT_ERROR);
-  if(status != HAL_OK)
-    goto can_error;
-
-  status = HAL_CAN_Start(&hcan1);
-  if(status != HAL_OK)
-    goto can_error;
-
-  CAN_NORMAL();
-
-  last_send = gTick64;
-
-  for(;;)
-  {
-    if(protPull(&canrxfifo, &message)) {
-      if(message.id == 0x202) {
-        if(message.rtr == CAN_RTR_DATA && message.length == 8) {
-          if(message.data.dwords[0] < sizeof(sParameters) / sizeof(uint32_t)) {
-            led_set(LedCan, LedShort);
-            params_ptr[message.data.dwords[0]] = message.data.dwords[1];
-            BIT_SET(msgs_bitmap, message.data.dwords[0]);
-            isoktosend = 1;
-            pos_send = 0;
-            for(int i = 0; i < ITEMSOF(gParameters); i++) {
-              if(BIT_GET(gConfigBitmap, i) && !BIT_GET(msgs_bitmap, gParameters[i].offset / sizeof(uint32_t))) {
-                pos_send = gParameters[i].offset / sizeof(uint32_t);
-                isoktosend = 0;
-                break;
-              }
-            }
-            if(isoktosend) {
-              isoktosend = 0;
-              for(int i = 0; i < sizeof(msgs_bitmap); i++) {
-                if(msgs_bitmap[i]) {
-                  isoktosend = 1;
-                  break;
-                }
-              }
-              if(isoktosend) {
-                for(int i = 0; i < ITEMSOF(gParamsFifo); i++) {
-                  if(gParamsFifo[i].buffer && gParamsFifo[i].info.capacity) {
-                    protPush(&gParamsFifo[i], &parameters);
-                  }
-                }
-                memset(msgs_bitmap, 0, sizeof(msgs_bitmap));
-                pos_send = 0;
-              }
-            }
-            need_send = 1;
-          }
-          }
-      } else if(message.id == 0x200) {
-        if(message.rtr == CAN_RTR_DATA && message.length == 5) {
-          if(message.data.bytes[0] == 0x10 &&
-              message.data.bytes[1] == 0xB5 &&
-              message.data.bytes[2] == 0xDA &&
-              message.data.bytes[3] == 0x7F &&
-              message.data.bytes[4] == 0x63) {
-            led_set(LedCan, LedShort);
-            pinged = 1;
-          }
-        }
-      }
-    }
-
-    if(!need_send) {
-      diff = gTick64 - last_send;
-      if(diff > 50)
-        need_send = 1;
-    }
-
-    if(need_send) {
-      free_level = HAL_CAN_GetTxMailboxesFreeLevel(&hcan1);
-      if(free_level) {
-
-        if(pinged) {
-          message.id = 0x102;
-          message.length = 4;
-          message.rtr = CAN_RTR_DATA;
-          message.data.dwords[0] = pos_send;
-        } else {
-          message.id = 0x100;
-          message.length = 5;
-          message.rtr = CAN_RTR_DATA;
-          message.data.bytes[0] = 0x10;
-          message.data.bytes[1] = 0xB5;
-          message.data.bytes[2] = 0xDA;
-          message.data.bytes[3] = 0x7F;
-          message.data.bytes[4] = 0x63;
-        }
-
-        header.IDE = CAN_ID_STD;
-        header.StdId = message.id;
-        header.RTR = message.rtr;
-        header.DLC = message.length;
-
-        status = HAL_CAN_AddTxMessage(&hcan1, &header, message.data.bytes, &mailbox);
-        if(status == HAL_OK) {
-          last_send = gTick64;
-          need_send = 0;
-          free_level &= ~(1 << mailbox);
-
-          if(!pinged) {
-            //led_set(LedCan, LedShort);
-          }
-        }
-      }
-    }
-
-    osDelay(1);
-    diff = gTick64 - last_iwdg;
-    if(diff > 100) {
-      HAL_IWDG_Refresh(&hiwdg);
-      last_iwdg = gTick64;
-    }
-  }
-
-  can_error:
-
-
-  led_set(LedCan, LedLong);
+  now = gTick64;
+  last = now;
 
   while(1)
   {
-   HAL_IWDG_Refresh(&hiwdg);
-   osDelay(100);
+    now = gTick64;
+
+    can_loop();
+
+    status = can_receive(&message);
+    if(status > 0) {
+      ecu_can_process_message(&message, &parameters);
+    }
+
+    if(now - last > 1000) {
+      can_signal_append_uint(&g_can_message_id110_LOG_ECU, &g_can_signal_id110_LOG_ECU_Unique, (uint16_t)now);
+      can_message_send(&g_can_message_id110_LOG_ECU);
+      last = now;
+    }
+
+    osDelay(1);
   }
 }
 
@@ -736,7 +735,7 @@ void tasksInit(void)
   }
 
   h_task_time = osThreadNew(StartTimeTask, NULL, &attrs_task_time);
-  h_task_usb = osThreadNew(StartUsbTask, NULL, &attrs_task_usb);
+  //h_task_usb = osThreadNew(StartUsbTask, NULL, &attrs_task_usb);
   h_task_sdio = osThreadNew(StartSdioTask, NULL, &attrs_task_sdio);
   h_task_can = osThreadNew(StartCanTask, NULL, &attrs_task_can);
   h_task_kline = osThreadNew(StartKlineTask, NULL, &attrs_task_kline);

@@ -2,8 +2,9 @@
 #include "cmsis_os.h"
 #include "fatfs.h"
 #include "led.h"
+#include "can.h"
 
- CAN_HandleTypeDef hcan1;
+CAN_HandleTypeDef hcan1;
 
 IWDG_HandleTypeDef hiwdg;
 
@@ -37,19 +38,59 @@ static void MX_RTC_Init(void);
 static void MX_TIM7_Init(void);
 extern void tasksInit(void);
 
-extern void can_rxfifopendingcallback(CAN_HandleTypeDef *_hcan, uint32_t fifo);
+void HAL_CAN_TxMailbox0AbortCallback(CAN_HandleTypeDef *hcan)
+{
+  if(hcan == &hcan1) {
+    can_txfifo_aborted_callback(hcan, CAN_TX_MAILBOX0);
+  }
+}
+
+void HAL_CAN_TxMailbox1AbortCallback(CAN_HandleTypeDef *hcan)
+{
+  if(hcan == &hcan1) {
+    can_txfifo_aborted_callback(hcan, CAN_TX_MAILBOX1);
+  }
+}
+
+void HAL_CAN_TxMailbox2AbortCallback(CAN_HandleTypeDef *hcan)
+{
+  if(hcan == &hcan1) {
+    can_txfifo_aborted_callback(hcan, CAN_TX_MAILBOX2);
+  }
+}
+
+void HAL_CAN_TxMailbox0CompleteCallback(CAN_HandleTypeDef *hcan)
+{
+  if(hcan == &hcan1) {
+    can_txfifo_completed_callback(hcan, CAN_TX_MAILBOX0);
+  }
+}
+
+void HAL_CAN_TxMailbox1CompleteCallback(CAN_HandleTypeDef *hcan)
+{
+  if(hcan == &hcan1) {
+    can_txfifo_completed_callback(hcan, CAN_TX_MAILBOX1);
+  }
+}
+
+void HAL_CAN_TxMailbox2CompleteCallback(CAN_HandleTypeDef *hcan)
+{
+  if(hcan == &hcan1) {
+    can_txfifo_completed_callback(hcan, CAN_TX_MAILBOX2);
+  }
+}
 
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
   if(hcan == &hcan1) {
-    can_rxfifopendingcallback(hcan, CAN_RX_FIFO0);
+    can_rxfifo_pending_callback(hcan, CAN_RX_FIFO0);
   }
 }
 
 void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
   if(hcan == &hcan1) {
-    can_rxfifopendingcallback(hcan, CAN_RX_FIFO1);
+    can_rxfifo_pending_callback(hcan, CAN_RX_FIFO1);
   }
 }
 
@@ -246,8 +287,8 @@ static void MX_RTC_Init(void)
   /* USER CODE BEGIN RTC_Init 2 */
 
   sDate.Date = 1;
-  sDate.Month = 5;
-  sDate.Year = 22;
+  sDate.Month = 1;
+  sDate.Year = 24;
 
   sTime.Hours = 9;
   sTime.Minutes = 0;
