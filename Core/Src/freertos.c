@@ -628,6 +628,7 @@ static int8_t ecu_can_process_message(const sCanRawMessage *message, sLoggerPara
         can_signal_get_float(&g_can_message_id02A_ECU, &g_can_signal_id02A_ECU_EtcAdcRsvd6, &parameters->AdcEtcRsvd6);
         can_signal_get_float(&g_can_message_id02A_ECU, &g_can_signal_id02A_ECU_EtcAdcReferenceVoltage, &parameters->AdcEtcReferenceVoltage);
         can_signal_get_float(&g_can_message_id02A_ECU, &g_can_signal_id02A_ECU_EtcAdcPowerVoltage, &parameters->AdcEtcPowerVoltage);
+        msgs_bitmap |= 1 << (can_msg->Id - 0x020);
         break;
       case 0x02B:
         can_signal_get_float(&g_can_message_id02B_ECU, &g_can_signal_id02B_ECU_EtcThrottleTargetPosition, &parameters->ThrottleTargetPosition);
@@ -647,6 +648,7 @@ static int8_t ecu_can_process_message(const sCanRawMessage *message, sLoggerPara
         can_signal_get_uint8(&g_can_message_id02B_ECU, &g_can_signal_id02B_ECU_EtcOutCruizeR, &parameters->EtcOutCruizeR);
         can_signal_get_uint8(&g_can_message_id02B_ECU, &g_can_signal_id02B_ECU_EtcOutRsvd3, &parameters->EtcOutRsvd3);
         can_signal_get_uint8(&g_can_message_id02B_ECU, &g_can_signal_id02B_ECU_EtcOutRsvd4, &parameters->EtcOutRsvd4);
+        msgs_bitmap |= 1 << (can_msg->Id - 0x020);
         break;
       default:
         break;
@@ -722,6 +724,8 @@ void StartCanTask(void *argument)
   can_message_register_msg(&g_can_message_id027_ECU);
   can_message_register_msg(&g_can_message_id028_ECU);
   can_message_register_msg(&g_can_message_id029_ECU);
+  can_message_register_msg(&g_can_message_id02A_ECU);
+  can_message_register_msg(&g_can_message_id02B_ECU);
 
   now = gTick64;
   last = now;
