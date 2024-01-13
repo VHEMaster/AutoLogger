@@ -488,7 +488,7 @@ static void driver_loop(struct sLogDriver *driver)
 
 static int8_t ecu_can_process_message(const sCanRawMessage *message, sLoggerParameters *logger_parameters)
 {
-  const uint32_t messages_count = 10;
+  const uint32_t messages_count = 12;
   const uint32_t msgs_expected = (1 << messages_count) - 1;
   static uint32_t msgs_bitmap = 0;
   sParameters *parameters = &logger_parameters->params;
@@ -618,6 +618,35 @@ static int8_t ecu_can_process_message(const sCanRawMessage *message, sLoggerPara
         can_signal_get_uint8(&g_can_message_id029_ECU, &g_can_signal_id029_ECU_CurrentTable, &parameters->CurrentTable);
         can_signal_get_uint8(&g_can_message_id029_ECU, &g_can_signal_id029_ECU_InjectorChannel, &parameters->InjectorChannel);
         msgs_bitmap |= 1 << (can_msg->Id - 0x020);
+        break;
+      case 0x02A:
+        can_signal_get_float(&g_can_message_id02A_ECU, &g_can_signal_id02A_ECU_EtcAdcTps1, &parameters->AdcEtcTps1);
+        can_signal_get_float(&g_can_message_id02A_ECU, &g_can_signal_id02A_ECU_EtcAdcTps2, &parameters->AdcEtcTps2);
+        can_signal_get_float(&g_can_message_id02A_ECU, &g_can_signal_id02A_ECU_EtcAdcPedal1, &parameters->AdcEtcPedal1);
+        can_signal_get_float(&g_can_message_id02A_ECU, &g_can_signal_id02A_ECU_EtcAdcPedal2, &parameters->AdcEtcPedal2);
+        can_signal_get_float(&g_can_message_id02A_ECU, &g_can_signal_id02A_ECU_EtcAdcRsvd5, &parameters->AdcEtcRsvd5);
+        can_signal_get_float(&g_can_message_id02A_ECU, &g_can_signal_id02A_ECU_EtcAdcRsvd6, &parameters->AdcEtcRsvd6);
+        can_signal_get_float(&g_can_message_id02A_ECU, &g_can_signal_id02A_ECU_EtcAdcReferenceVoltage, &parameters->AdcEtcReferenceVoltage);
+        can_signal_get_float(&g_can_message_id02A_ECU, &g_can_signal_id02A_ECU_EtcAdcPowerVoltage, &parameters->AdcEtcPowerVoltage);
+        break;
+      case 0x02B:
+        can_signal_get_float(&g_can_message_id02B_ECU, &g_can_signal_id02B_ECU_EtcThrottleTargetPosition, &parameters->ThrottleTargetPosition);
+        can_signal_get_float(&g_can_message_id02B_ECU, &g_can_signal_id02B_ECU_EtcThrottleDefaultPosition, &parameters->ThrottleDefaultPosition);
+        can_signal_get_float(&g_can_message_id02B_ECU, &g_can_signal_id02B_ECU_EtcWishThrottleTargetPosition, &parameters->WishThrottleTargetPosition);
+        can_signal_get_float(&g_can_message_id02B_ECU, &g_can_signal_id02B_ECU_EtcPedalPosition, &parameters->PedalPosition);
+        can_signal_get_uint8(&g_can_message_id02B_ECU, &g_can_signal_id02B_ECU_EtcStandaloneFlag, &parameters->EtcStandaloneFlag);
+        can_signal_get_uint8(&g_can_message_id02B_ECU, &g_can_signal_id02B_ECU_EtcMotorActive, &parameters->EtcMotorActiveFlag);
+        can_signal_get_uint8(&g_can_message_id02B_ECU, &g_can_signal_id02B_ECU_EtcMotorFullCloseFlag, &parameters->EtcMotorFullCloseFlag);
+        can_signal_get_uint8(&g_can_message_id02B_ECU, &g_can_signal_id02B_ECU_EtcInCruizeStart, &parameters->EtcInCruizeStart);
+        can_signal_get_uint8(&g_can_message_id02B_ECU, &g_can_signal_id02B_ECU_EtcInCruizeStop, &parameters->EtcInCruizeStop);
+        can_signal_get_uint8(&g_can_message_id02B_ECU, &g_can_signal_id02B_ECU_EtcInBrake, &parameters->EtcInBrake);
+        can_signal_get_uint8(&g_can_message_id02B_ECU, &g_can_signal_id02B_ECU_EtcInRsvd4, &parameters->EtcInRsvd4);
+        can_signal_get_uint8(&g_can_message_id02B_ECU, &g_can_signal_id02B_ECU_EtcInRsvd5, &parameters->EtcInRsvd5);
+        can_signal_get_uint8(&g_can_message_id02B_ECU, &g_can_signal_id02B_ECU_EtcInRsvd6, &parameters->EtcInRsvd6);
+        can_signal_get_uint8(&g_can_message_id02B_ECU, &g_can_signal_id02B_ECU_EtcOutCruizeG, &parameters->EtcOutCruizeG);
+        can_signal_get_uint8(&g_can_message_id02B_ECU, &g_can_signal_id02B_ECU_EtcOutCruizeR, &parameters->EtcOutCruizeR);
+        can_signal_get_uint8(&g_can_message_id02B_ECU, &g_can_signal_id02B_ECU_EtcOutRsvd3, &parameters->EtcOutRsvd3);
+        can_signal_get_uint8(&g_can_message_id02B_ECU, &g_can_signal_id02B_ECU_EtcOutRsvd4, &parameters->EtcOutRsvd4);
         break;
       default:
         break;
