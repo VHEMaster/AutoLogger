@@ -13,8 +13,8 @@
 static CAN_HandleTypeDef *hcan;
 static CAN_FilterTypeDef can_filter;
 
-#define CAN_TX_BUFFER_COUNT (2)
-#define CAN_RX_BUFFER_COUNT (16)
+#define CAN_TX_BUFFER_COUNT (4)
+#define CAN_RX_BUFFER_COUNT (32)
 
 static sProFIFO cantxfifo;
 static sProFIFO canrxfifo;

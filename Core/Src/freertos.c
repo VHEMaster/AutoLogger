@@ -707,8 +707,8 @@ void StartCanTask(void *argument)
 
   can_init(&hcan1);
 
-  const uint16_t filter_ids[] = { 0x020, 0x021 };
-  const uint16_t filter_masks[] = { 0x7F1, 0x7F1 };
+  const uint16_t filter_ids[] = { 0x020, 0x028 };
+  const uint16_t filter_masks[] = { 0x7F8, 0x7F8 };
   can_start(filter_ids, filter_masks, ITEMSOF(filter_ids));
 
   led_set(LedCan, LedOn);
